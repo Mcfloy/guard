@@ -1,0 +1,14 @@
+[package]
+name = "guard-grpc"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+guard = { path = "../guard" }
+prost = "0.9.0"
+tonic = "0.6.2"
+
+[build-dependencies]
+tonic-build = "0.6.2"
