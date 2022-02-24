@@ -1,0 +1,19 @@
+[package]
+name = "guard"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.52"
+thiserror = "1.0.30"
+#tokio = { version = "1.16.1", features = ["macros", "rt-multi-thread"] }
+
+[dev-dependencies]
+linked_hash_set = "0.1.4"
+tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
+
+[lib]
+name = "guard"
+path = "src/lib.rs"

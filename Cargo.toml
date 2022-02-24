@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "guard",
+    "guard-postgres"
+]
