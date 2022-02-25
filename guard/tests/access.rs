@@ -8,6 +8,63 @@ mod access_should {
     use crate::repository as test_repository;
 
     #[tokio::test]
+    async fn return_false_when_enforce_unknown_access() {
+        let mut repository = test_repository::InMemoryRepository::new();
+
+        let diona_access = Access {
+            subject: "diona-test".to_string(),
+            namespace: "namespace-test".to_string(),
+            domain: "domain-test".to_string(),
+            object: "object-test".to_string(),
+            action: "action-test".to_string()
+        };
+
+        let result = repository.enforce(&diona_access).await.unwrap();
+        assert_eq!(false, result);
+    }
+
+    #[tokio::test]
+    async fn return_true_when_enforce_existing_access() {
+        let mut repository = test_repository::InMemoryRepository::new();
+
+        let eula_access = Access {
+            subject: "eula-test".to_string(),
+            namespace: "namespace-test".to_string(),
+            domain: "domain-test".to_string(),
+            object: "object-test".to_string(),
+            action: "action-test".to_string()
+        };
+        repository.authorize_access(&eula_access).await.unwrap();
+
+        let result = repository.enforce(&eula_access).await.unwrap();
+        assert_eq!(true, result);
+    }
+
+    #[tokio::test]
+    async fn return_true_when_enforce_access_with_wildcard() {
+        let mut repository = test_repository::InMemoryRepository::new();
+
+        let fischl_wildcard_access = Access {
+            subject: "fischl-test".to_string(),
+            namespace: "namespace-test".to_string(),
+            domain: "domain-test".to_string(),
+            object: "object-test".to_string(),
+            action: "*".to_string()
+        };
+        repository.authorize_access(&fischl_wildcard_access).await.unwrap();
+
+        let fischl_access = Access {
+            subject: "fischl-test".to_string(),
+            namespace: "namespace-test".to_string(),
+            domain: "domain-test".to_string(),
+            object: "object-test".to_string(),
+            action: "action-test".to_string()
+        };
+        let result = repository.enforce(&fischl_access).await.unwrap();
+        assert_eq!(true, result);
+    }
+
+    #[tokio::test]
     async fn return_error_when_authorize_already_existing_access() {
         let mut repository = test_repository::InMemoryRepository::new();
 

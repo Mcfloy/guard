@@ -7,5 +7,7 @@ pub enum GuardError {
     #[error("Access already exists")]
     AccessAlreadyExists,
     #[error("Cannot remove access")]
-    CannotRemoveAccess
+    CannotRemoveAccess,
+    #[error("Cannot enforce: {0}")]
+    CannotEnforce(String)
 }

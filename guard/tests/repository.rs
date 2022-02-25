@@ -9,6 +9,7 @@ use guard::namespace::NamespaceRepository;
 
 pub struct InMemoryRepository {
     namespaces: LinkedHashSet<(String, String)>,
+    /// Order of the parameters: Subject, Namespace, Domain, Object, Action
     accesses: LinkedHashSet<(String, String, String, String, String)>
 }
 
@@ -18,12 +19,6 @@ impl InMemoryRepository {
             namespaces: LinkedHashSet::new(),
             accesses: LinkedHashSet::new()
         }
-    }
-
-    pub fn init_values(&mut self) {
-        self.namespaces.insert(("namespace1".to_string(), "alice".to_string()));
-        self.namespaces.insert(("namespace2".to_string(), "bob".to_string()));
-        self.namespaces.insert(("namespace3".to_string(), "obi-wan".to_string()));
     }
 }
 
@@ -58,6 +53,23 @@ impl NamespaceRepository for InMemoryRepository {
 
 #[async_trait]
 impl AccessRepository for InMemoryRepository {
+    async fn enforce(&self, access: &Access) -> Result<bool, Box<dyn Error>> {
+        let mut parameters = access.to_parameters();
+        match self.accesses.contains(&parameters) {
+            true => Ok(true),
+            false => {
+                parameters.4 = "*".to_string();
+                match self.accesses.contains(&parameters) {
+                    true => Ok(true),
+                    false => {
+                        parameters.2 = "*".to_string();
+                        Ok(self.accesses.contains(&parameters))
+                    }
+                }
+            }
+        }
+    }
+
     async fn authorize_access(&mut self, access: &Access) -> Result<(), Box<dyn Error>> {
         let parameters = access.to_parameters();
         if self.accesses.contains(&parameters) {

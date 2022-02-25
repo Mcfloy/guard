@@ -22,6 +22,8 @@ impl Access {
 
 #[async_trait]
 pub trait AccessRepository: Send + Sync + 'static {
+    async fn enforce(&self, access: &Access) -> Result<bool, Box<dyn std::error::Error>>;
+
     async fn authorize_access(&mut self, access: &Access) -> Result<(), Box<dyn std::error::Error>>;
 
     async fn remove_access(&mut self, access: &Access) -> Result<(), Box<dyn std::error::Error>>;
