@@ -3,11 +3,9 @@ syntax = "proto3";
 package guard;
 
 message EnforceRequest {
-  string sub = 1; // Subject
-  string ns = 2; // Namespace
-  string dom = 3; // Domain
-  string obj = 4; // Object
-  string act = 5; // Action
+  string dom = 1; // Domain
+  string obj = 2; // Object
+  string act = 3; // Action
 }
 
 message EnforcerResponse {

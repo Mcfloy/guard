@@ -54,7 +54,7 @@ impl NamespaceRepository for InMemoryRepository {
 #[async_trait]
 impl AccessRepository for InMemoryRepository {
     async fn enforce(&self, access: &Access) -> Result<bool, Box<dyn Error>> {
-        let mut parameters = access.to_parameters();
+        let mut parameters = to_parameters(access);
         match self.accesses.contains(&parameters) {
             true => Ok(true),
             false => {
@@ -71,18 +71,18 @@ impl AccessRepository for InMemoryRepository {
     }
 
     async fn authorize_access(&mut self, access: &Access) -> Result<(), Box<dyn Error>> {
-        let parameters = access.to_parameters();
+        let parameters = to_parameters(access);
         if self.accesses.contains(&parameters) {
             Err(Box::new(GuardError::AccessAlreadyExists))
         } else {
-            self.accesses.insert(access.to_parameters());
+            self.accesses.insert(to_parameters(access));
             self.namespaces.insert((access.namespace.clone(), access.subject.clone()));
             Ok(())
         }
     }
 
     async fn remove_access(&mut self, access: &Access) -> Result<(), Box<dyn Error>> {
-        let parameters = access.to_parameters();
+        let parameters = to_parameters(access);
         if self.accesses.contains(&parameters) {
             self.accesses.remove(&parameters);
             Ok(())
@@ -91,3 +91,14 @@ impl AccessRepository for InMemoryRepository {
         }
     }
 }
+
+fn to_parameters(access: &Access) -> (String, String, String, String, String) {
+    (
+        access.subject.clone(),
+        access.namespace.clone(),
+        access.domain.clone(),
+        access.object.clone(),
+        access.action.clone()
+    )
+}
+

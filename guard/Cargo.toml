@@ -8,6 +8,9 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.52"
 thiserror = "1.0.30"
+lazy_static = "1.4.0"
+jsonwebtoken = "8.0.1"
+serde = { version = "1.0.136", features = ["derive"] }
 #tokio = { version = "1.16.1", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
