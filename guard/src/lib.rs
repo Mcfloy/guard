@@ -1,6 +1,6 @@
 use crate::error::GuardError;
 
-pub mod access;
+pub mod permission;
 pub mod error;
 pub mod namespace;
 pub mod jwt;

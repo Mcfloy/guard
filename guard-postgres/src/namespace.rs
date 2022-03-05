@@ -6,7 +6,7 @@ use crate::PostgresRepository;
 
 #[async_trait]
 impl NamespaceRepository for PostgresRepository {
-    async fn get_namespaces(&self) -> Result<Vec<String>, Box<dyn Error>> {
+    async fn get_namespaces(&self) -> Result<Vec<String>, Box<dyn Error + Send + Sync>> {
         let result = sqlx::query!("SELECT DISTINCT v1 FROM guard WHERE ptype=$1;", "p")
             .fetch_all(&self.pool)
             .await;
@@ -17,7 +17,7 @@ impl NamespaceRepository for PostgresRepository {
         }
     }
 
-    async fn get_namespaces_of_subject(&self, subject: &str) -> Result<Vec<String>, Box<dyn Error>> {
+    async fn get_namespaces_of_subject(&self, subject: &str) -> Result<Vec<String>, Box<dyn Error + Send + Sync>> {
         let result = sqlx::query!(
             "SELECT DISTINCT v1 FROM guard WHERE ptype='p' AND v0=$1;", subject
         )

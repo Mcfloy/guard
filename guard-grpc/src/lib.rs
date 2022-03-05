@@ -1,9 +1,10 @@
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use tonic::{Request, Response, Status};
 
 pub use definitions::enforcer_client::EnforcerClient;
-use guard::access::{Access, AccessRepository};
+use guard::permission::{Permission, PermissionRepository};
 use guard::jwt;
 use guard::jwt::Principal;
 
@@ -15,20 +16,20 @@ mod definitions {
     tonic::include_proto!("guard");
 }
 
-pub struct GrpcServer<AccessRepo: AccessRepository> {
-    access_repository: Arc<AccessRepo>
+pub struct GrpcServer<AccessRepo: PermissionRepository> {
+    access_repository: Arc<Mutex<AccessRepo>>
 }
 
-impl<AccessRepo: AccessRepository> GrpcServer<AccessRepo> {
-    pub fn new(repository: Arc<AccessRepo>) -> Self {
+impl<AccessRepo: PermissionRepository> GrpcServer<AccessRepo> {
+    pub fn new(repository: Arc<Mutex<AccessRepo>>) -> Self {
         GrpcServer {
             access_repository: repository,
         }
     }
 }
 
-fn to_access(principal: &Principal, request: &EnforceRequest) -> Access {
-    Access {
+fn to_access(principal: &Principal, request: &EnforceRequest) -> Permission {
+    Permission {
         subject: principal.sub.clone().to_lowercase(),
         namespace: principal.namespace.clone().to_lowercase(),
         domain: request.dom.clone().to_lowercase(),
@@ -38,7 +39,7 @@ fn to_access(principal: &Principal, request: &EnforceRequest) -> Access {
 }
 
 #[tonic::async_trait]
-impl<R: AccessRepository> Enforcer for GrpcServer<R> {
+impl<R: PermissionRepository> Enforcer for GrpcServer<R> {
     async fn enforce(&self, request: Request<EnforceRequest>) -> Result<Response<EnforcerResponse>, Status> {
         let principal = match request.metadata().get(AUTHORIZATION_HEADER) {
             Some(header) => {
@@ -52,7 +53,7 @@ impl<R: AccessRepository> Enforcer for GrpcServer<R> {
             return Err(Status::invalid_argument("Request is incorrect"));
         }
 
-        let authorized = self.access_repository.enforce(&to_access(&principal, &request)).await
+        let authorized = self.access_repository.lock().await.enforce(&to_access(&principal, &request)).await
             .map_err(|error| Status::internal(error.to_string()))
             .unwrap();
         Ok(Response::new(EnforcerResponse {

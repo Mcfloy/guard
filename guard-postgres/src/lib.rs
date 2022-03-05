@@ -2,7 +2,7 @@ use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 
 mod namespace;
-mod access;
+mod permission;
 
 pub struct PostgresRepository {
     pool: Pool<Postgres>

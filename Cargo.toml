@@ -3,5 +3,6 @@ members = [
     "guard",
     "guard-postgres",
     "guard-grpc",
-    "guard-server"
+    "guard-server",
+    "guard-console"
 ]

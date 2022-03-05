@@ -1,14 +1,17 @@
 # Guard
 
-| Name    | Description |
-|---------|-------------|
-| Guard   | dezaide     |
-| dezadea | deaz        |
+Centralized authorization for multiple projects. Inspired of casbin.
 
-Centralized authorization API that allows to self-manage the APIs.
+| Name           | Description                                      |
+|----------------|--------------------------------------------------|
+| guard          | core library that exposes the trait              |
+| guard-grpc     | exposition of the enforce method through gRPC    |
+| guard-postgres | implementation of Guard with postgres            |
+| guard-server   | server that runs grpc and rest APIs to use Guard |
+| guard-console  | executable to create access for Guard            |
 
 ## TODO
 
-* [ ] Get Namespaces
+* [x] Get Namespaces
 * [ ] Get Roles from a namespace
-* [ ] Enforce a rule
+* [x] Enforce a rule

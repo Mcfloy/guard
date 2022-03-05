@@ -5,6 +5,7 @@ use poem::http::StatusCode;
 use poem::web::Data;
 use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::payload::{Json};
+use tokio::sync::Mutex;
 
 use guard::namespace::NamespaceRepository;
 use guard_postgres::PostgresRepository;
@@ -30,10 +31,10 @@ impl NamespacesApi {
     #[oai(path="/namespaces", method = "get")]
     async fn get_namespaces(
         &self,
-        repository: Data<&Arc<PostgresRepository>>,
+        repository: Data<&Arc<Mutex<PostgresRepository>>>,
         _user: AuthenticatedUser
     ) -> Result<NamespaceResponse> {
-        let namespaces = repository.0.get_namespaces().await
+        let namespaces = repository.0.lock().await.get_namespaces().await
             .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?;
 
         Ok(NamespaceResponse::List(Json(NamespaceList {
@@ -45,11 +46,11 @@ impl NamespacesApi {
     #[oai(path="/me/namespaces", method = "get")]
     async fn get_my_namespaces(
         &self,
-        repository: Data<&Arc<PostgresRepository>>,
+        repository: Data<&Arc<Mutex<PostgresRepository>>>,
         principal: AuthenticatedUser
     ) -> Result<NamespaceResponse> {
         let subject = principal.0.sub;
-        let namespaces = repository.0.get_namespaces_of_subject(&subject).await
+        let namespaces = repository.0.lock().await.get_namespaces_of_subject(&subject).await
             .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?;
 
         Ok(NamespaceResponse::List(Json(NamespaceList {

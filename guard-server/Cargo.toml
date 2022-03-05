@@ -9,11 +9,11 @@ edition = "2021"
 guard = { path = "../guard" }
 guard-grpc = { path = "../guard-grpc" }
 guard-postgres = { path = "../guard-postgres" }
-poem = { version = "1.3.7", features = ["i18n", "anyhow", "tower-compat"] }
-poem-openapi = { version = "1.3.7", features = ["swagger-ui"] }
+poem = { version = "1.3.8", features = ["i18n", "anyhow", "tower-compat"] }
+poem-openapi = { version = "1.3.8", features = ["swagger-ui"] }
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 tonic = "0.6.2"
-serde = { version = "1.0.136", feature = ["derive"] }
+serde = { version = "1.0.136" }
 dotenv = "0.15.0"
 
 [[bin]]

@@ -3,7 +3,7 @@ use std::error::Error;
 use async_trait::async_trait;
 use linked_hash_set::LinkedHashSet;
 
-use guard::access::{Access, AccessRepository};
+use guard::permission::{Permission, PermissionRepository};
 use guard::error::GuardError;
 use guard::namespace::NamespaceRepository;
 
@@ -52,8 +52,8 @@ impl NamespaceRepository for InMemoryRepository {
 }
 
 #[async_trait]
-impl AccessRepository for InMemoryRepository {
-    async fn enforce(&self, access: &Access) -> Result<bool, Box<dyn Error>> {
+impl PermissionRepository for InMemoryRepository {
+    async fn enforce(&self, access: &Permission) -> Result<bool, Box<dyn Error>> {
         let mut parameters = to_parameters(access);
         match self.accesses.contains(&parameters) {
             true => Ok(true),
@@ -70,10 +70,10 @@ impl AccessRepository for InMemoryRepository {
         }
     }
 
-    async fn authorize_access(&mut self, access: &Access) -> Result<(), Box<dyn Error>> {
+    async fn grant_permission(&mut self, access: &Permission) -> Result<(), Box<dyn Error>> {
         let parameters = to_parameters(access);
         if self.accesses.contains(&parameters) {
-            Err(Box::new(GuardError::AccessAlreadyExists))
+            Err(Box::new(GuardError::PermissionAlreadyExists))
         } else {
             self.accesses.insert(to_parameters(access));
             self.namespaces.insert((access.namespace.clone(), access.subject.clone()));
@@ -81,7 +81,7 @@ impl AccessRepository for InMemoryRepository {
         }
     }
 
-    async fn remove_access(&mut self, access: &Access) -> Result<(), Box<dyn Error>> {
+    async fn remove_permission(&mut self, access: &Permission) -> Result<(), Box<dyn Error>> {
         let parameters = to_parameters(access);
         if self.accesses.contains(&parameters) {
             self.accesses.remove(&parameters);
@@ -90,9 +90,30 @@ impl AccessRepository for InMemoryRepository {
             Err(Box::new(GuardError::CannotRemoveAccess))
         }
     }
+
+    async fn list_permissions_from_namespace(&mut self, _namespace: &str) -> Result<Vec<Permission>, Box<dyn Error>> {
+        // DEVNOTE: This is a dumb workaround, but developing a column by column filter seems a bit exhausting.
+        Ok(self.accesses
+            .iter()
+            .map(|fields| to_access(fields))
+            .collect::<Vec<Permission>>()
+        )
+    }
 }
 
-fn to_parameters(access: &Access) -> (String, String, String, String, String) {
+type Parameters = (String, String, String, String, String);
+
+fn to_access(parameters: &Parameters) -> Permission {
+    Permission {
+        subject: parameters.0.clone(),
+        namespace: parameters.1.clone(),
+        domain: parameters.2.clone(),
+        object: parameters.3.clone(),
+        action: parameters.4.clone()
+    }
+}
+
+fn to_parameters(access: &Permission) -> Parameters {
     (
         access.subject.clone(),
         access.namespace.clone(),
