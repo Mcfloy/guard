@@ -8,32 +8,32 @@ mod namespaces_should {
     async fn return_namespaces_when_retrieve_namespaces() {
         let mut repository = PostgresRepository::new().await;
 
-        let albedo_access = Permission {
+        let albedo_permission = Permission {
             subject: "albedo-test".to_string(),
             namespace: "namespace1-test".to_string(),
             domain: "domain-test".to_string(),
             object: "object-test".to_string(),
             action: "action-test".to_string()
         };
-        repository.grant_permission(&albedo_access).await.unwrap();
+        repository.grant_permission(&albedo_permission).await.unwrap();
 
-        let amber_access = Permission {
+        let amber_permission = Permission {
             subject: "amber-test".to_string(),
             namespace: "namespace2-test".to_string(),
             domain: "domain-test".to_string(),
             object: "object-test".to_string(),
             action: "action-test".to_string()
         };
-        repository.grant_permission(&amber_access).await.unwrap();
+        repository.grant_permission(&amber_permission).await.unwrap();
 
-        let barbara_access = Permission {
+        let barbara_permission = Permission {
             subject: "barbara-test".to_string(),
             namespace: "namespace3-test".to_string(),
             domain: "domain-test".to_string(),
             object: "object-test".to_string(),
             action: "action-test".to_string()
         };
-        repository.grant_permission(&barbara_access).await.unwrap();
+        repository.grant_permission(&barbara_permission).await.unwrap();
 
         let namespaces = repository
             .get_namespaces()
@@ -46,32 +46,32 @@ mod namespaces_should {
             "namespace3-test"
         ]);
 
-        repository.remove_permission(&albedo_access).await.unwrap();
-        repository.remove_permission(&amber_access).await.unwrap();
-        repository.remove_permission(&barbara_access).await.unwrap();
+        repository.remove_permission(&albedo_permission).await.unwrap();
+        repository.remove_permission(&amber_permission).await.unwrap();
+        repository.remove_permission(&barbara_permission).await.unwrap();
     }
 
     #[tokio::test]
     async fn return_namespaces_of_user_when_retrieve_namespaces_of_user() {
         let mut repository = PostgresRepository::new().await;
 
-        let beidou_access = Permission {
+        let beidou_permission = Permission {
             subject: "beidou-test".to_string(),
             namespace: "namespace1-test".to_string(),
             domain: "domain-test".to_string(),
             object: "object-test".to_string(),
             action: "action-test".to_string()
         };
-        repository.grant_permission(&beidou_access).await.unwrap();
+        repository.grant_permission(&beidou_permission).await.unwrap();
 
-        let bennett_access = Permission {
+        let bennett_permission = Permission {
             subject: "bennett-test".to_string(),
             namespace: "namespace2-test".to_string(),
             domain: "domain-test".to_string(),
             object: "object-test".to_string(),
             action: "action-test".to_string()
         };
-        repository.grant_permission(&bennett_access).await.unwrap();
+        repository.grant_permission(&bennett_permission).await.unwrap();
 
         let namespaces = repository
             .get_namespaces_of_subject("beidou-test")
@@ -91,7 +91,7 @@ mod namespaces_should {
             "namespace2-test"
         ]);
 
-        repository.remove_permission(&beidou_access).await.unwrap();
-        repository.remove_permission(&bennett_access).await.unwrap();
+        repository.remove_permission(&beidou_permission).await.unwrap();
+        repository.remove_permission(&bennett_permission).await.unwrap();
     }
 }

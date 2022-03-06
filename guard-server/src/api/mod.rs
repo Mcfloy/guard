@@ -1,2 +1,2 @@
 pub mod namespace;
-pub mod access;
+pub mod permission;

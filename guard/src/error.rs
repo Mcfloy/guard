@@ -2,14 +2,16 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum GuardError {
-    #[error("Namespace error {0}")]
+    #[error("Namespace error: {0}")]
     NamespaceError(String),
-    #[error("Access already exists")]
+    #[error("Permission already exists")]
     PermissionAlreadyExists,
-    #[error("Cannot remove access")]
-    CannotRemoveAccess,
-    #[error("Cannot get access")]
-    CannotGetAccess,
+    #[error("Cannot remove permission")]
+    CannotRemovePermission,
+    #[error("Cannot get permission")]
+    CannotGetPermission,
     #[error("Cannot enforce: {0}")]
-    CannotEnforce(String)
+    CannotEnforce(String),
+    #[error("{0}")]
+    PermissionError(String)
 }

@@ -11,11 +11,16 @@ pub struct Permission {
     pub action: String
 }
 
+// TODO: Introduce the notion of Permission Builder for guard
+// - Edit Permission
+// - Edit Group ?
+// - Is Owner of namespace ?
+
 #[async_trait]
 pub trait PermissionRepository: Send + Sync + 'static {
-    async fn enforce(&self, access: &Permission) -> Result<bool, GuardError>;
+    async fn enforce(&self, permission: &Permission) -> Result<bool, GuardError>;
 
-    async fn grant_permission(&mut self, access: &Permission) -> Result<(), GuardError>;
+    async fn grant_permission(&mut self, permission: &Permission) -> Result<(), GuardError>;
 
     async fn remove_permission(&mut self, permission: &Permission) -> Result<(), GuardError>;
 

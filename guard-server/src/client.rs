@@ -4,17 +4,13 @@ use tonic::metadata::MetadataValue;
 
 use guard_grpc::EnforceRequest;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv::dotenv()?;
-    let now = Instant::now();
-
+async fn call_grpc() {
     let mut client = guard_grpc::EnforcerClient::connect("http://127.0.0.1:3000")
         .await
         .unwrap();
 
     let mut request = tonic::Request::new(EnforceRequest {
-        dom: "014".to_string(),
+        dom: "test".to_string(),
         obj: "delivery".to_string(),
         act: "list".to_string()
     });
@@ -25,7 +21,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     request.metadata_mut()
         .insert("authorization", metadata);
 
-    let response = client.enforce(request).await?;
-    println!("RESPONSE in {}={:?}", now.elapsed().as_millis() ,response.into_inner().authorized);
+    client.enforce(request).await.unwrap();
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv::dotenv().ok();
+    let mut response_times: Vec<f64> = vec![];
+
+    for _ in 1..1000 {
+        let now = Instant::now();
+        call_grpc().await;
+        response_times.push(now.elapsed().as_millis() as f64);
+    }
+
+    let avg: f64 = response_times.iter().sum::<f64>() / response_times.len() as f64;
+    println!("Average time: {} ms", avg);
     Ok(())
 }

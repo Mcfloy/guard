@@ -10,14 +10,14 @@ use guard::namespace::NamespaceRepository;
 pub struct InMemoryRepository {
     namespaces: LinkedHashSet<(String, String)>,
     /// Order of the parameters: Subject, Namespace, Domain, Object, Action
-    accesses: LinkedHashSet<(String, String, String, String, String)>
+    permissions: LinkedHashSet<(String, String, String, String, String)>
 }
 
 impl InMemoryRepository {
     pub fn new() -> Self {
         InMemoryRepository {
             namespaces: LinkedHashSet::new(),
-            accesses: LinkedHashSet::new()
+            permissions: LinkedHashSet::new()
         }
     }
 }
@@ -53,49 +53,54 @@ impl NamespaceRepository for InMemoryRepository {
 
 #[async_trait]
 impl PermissionRepository for InMemoryRepository {
-    async fn enforce(&self, access: &Permission) -> Result<bool, Box<dyn Error>> {
-        let mut parameters = to_parameters(access);
-        match self.accesses.contains(&parameters) {
+    async fn enforce(&self, permission: &Permission) -> Result<bool, Box<dyn Error>> {
+        let mut parameters = to_parameters(permission);
+        match self.permissions.contains(&parameters) {
             true => Ok(true),
             false => {
                 parameters.4 = "*".to_string();
-                match self.accesses.contains(&parameters) {
+                match self.permissions.contains(&parameters) {
                     true => Ok(true),
                     false => {
                         parameters.2 = "*".to_string();
-                        Ok(self.accesses.contains(&parameters))
+                        Ok(self.permissions.contains(&parameters))
                     }
                 }
             }
         }
     }
 
-    async fn grant_permission(&mut self, access: &Permission) -> Result<(), Box<dyn Error>> {
-        let parameters = to_parameters(access);
-        if self.accesses.contains(&parameters) {
+    async fn grant_permission(&mut self, permission: &Permission) -> Result<(), Box<dyn Error>> {
+        let parameters = to_parameters(permission);
+        if self.permissions.contains(&parameters) {
             Err(Box::new(GuardError::PermissionAlreadyExists))
         } else {
-            self.accesses.insert(to_parameters(access));
-            self.namespaces.insert((access.namespace.clone(), access.subject.clone()));
+            self.permissions.insert(to_parameters(permission));
+            self.namespaces.insert((permission.namespace.clone(), permission.subject.clone()));
             Ok(())
         }
     }
 
-    async fn remove_permission(&mut self, access: &Permission) -> Result<(), Box<dyn Error>> {
-        let parameters = to_parameters(access);
-        if self.accesses.contains(&parameters) {
-            self.accesses.remove(&parameters);
+    async fn remove_permission(&mut self, permission: &Permission) -> Result<(), Box<dyn Error>> {
+        let parameters = to_parameters(permission);
+        if self.permissions.contains(&parameters) {
+            self.permissions.remove(&parameters);
             Ok(())
         } else {
-            Err(Box::new(GuardError::CannotRemoveAccess))
+            Err(Box::new(GuardError::CannotRemovePermission))
         }
+    }
+
+    async fn contains_permission(&mut self, permission: &Permission) -> Result<bool, GuardError> {
+        let parameters = to_parameters(permission);
+        Ok(self.permissions.contains(&parameters))
     }
 
     async fn list_permissions_from_namespace(&mut self, _namespace: &str) -> Result<Vec<Permission>, Box<dyn Error>> {
         // DEVNOTE: This is a dumb workaround, but developing a column by column filter seems a bit exhausting.
-        Ok(self.accesses
+        Ok(self.permissions
             .iter()
-            .map(|fields| to_access(fields))
+            .map(|fields| to_permission(fields))
             .collect::<Vec<Permission>>()
         )
     }
@@ -103,7 +108,7 @@ impl PermissionRepository for InMemoryRepository {
 
 type Parameters = (String, String, String, String, String);
 
-fn to_access(parameters: &Parameters) -> Permission {
+fn to_permission(parameters: &Parameters) -> Permission {
     Permission {
         subject: parameters.0.clone(),
         namespace: parameters.1.clone(),
@@ -113,13 +118,13 @@ fn to_access(parameters: &Parameters) -> Permission {
     }
 }
 
-fn to_parameters(access: &Permission) -> Parameters {
+fn to_parameters(permission: &Permission) -> Parameters {
     (
-        access.subject.clone(),
-        access.namespace.clone(),
-        access.domain.clone(),
-        access.object.clone(),
-        access.action.clone()
+        permission.subject.clone(),
+        permission.namespace.clone(),
+        permission.domain.clone(),
+        permission.object.clone(),
+        permission.action.clone()
     )
 }
 

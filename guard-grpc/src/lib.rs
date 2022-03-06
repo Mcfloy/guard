@@ -16,19 +16,19 @@ mod definitions {
     tonic::include_proto!("guard");
 }
 
-pub struct GrpcServer<AccessRepo: PermissionRepository> {
-    access_repository: Arc<Mutex<AccessRepo>>
+pub struct GrpcServer<PermissionRepo: PermissionRepository> {
+    permission_repository: Arc<Mutex<PermissionRepo>>
 }
 
-impl<AccessRepo: PermissionRepository> GrpcServer<AccessRepo> {
-    pub fn new(repository: Arc<Mutex<AccessRepo>>) -> Self {
+impl<PermissionRepo: PermissionRepository> GrpcServer<PermissionRepo> {
+    pub fn new(repository: Arc<Mutex<PermissionRepo>>) -> Self {
         GrpcServer {
-            access_repository: repository,
+            permission_repository: repository,
         }
     }
 }
 
-fn to_access(principal: &Principal, request: &EnforceRequest) -> Permission {
+fn to_permission(principal: &Principal, request: &EnforceRequest) -> Permission {
     Permission {
         subject: principal.sub.clone().to_lowercase(),
         namespace: principal.namespace.clone().to_lowercase(),
@@ -53,7 +53,7 @@ impl<R: PermissionRepository> Enforcer for GrpcServer<R> {
             return Err(Status::invalid_argument("Request is incorrect"));
         }
 
-        let authorized = self.access_repository.lock().await.enforce(&to_access(&principal, &request)).await
+        let authorized = self.permission_repository.lock().await.enforce(&to_permission(&principal, &request)).await
             .map_err(|error| Status::internal(error.to_string()))
             .unwrap();
         Ok(Response::new(EnforcerResponse {
