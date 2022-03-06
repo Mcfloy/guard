@@ -15,6 +15,7 @@ use guard_postgres::PostgresRepository;
 use crate::api::permission::PermissionApi;
 
 use crate::api::namespace::NamespacesApi;
+use crate::api::role::RoleApi;
 
 mod user;
 mod api;
@@ -44,7 +45,7 @@ async fn main() -> Result<(), std::io::Error> {
     let server = GrpcServer::new(Arc::clone(&repository));
 
     let api_service = OpenApiService::new(
-        (PermissionApi, NamespacesApi), "Guard API", "1.0"
+        (PermissionApi, NamespacesApi, RoleApi), "Guard API", "1.0"
     )
         .server(format!("/v1"));
 

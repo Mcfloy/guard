@@ -10,9 +10,9 @@ async fn call_grpc() {
         .unwrap();
 
     let mut request = tonic::Request::new(EnforceRequest {
-        dom: "test".to_string(),
-        obj: "delivery".to_string(),
-        act: "list".to_string()
+        dom: "lastmile".to_string(),
+        obj: "permission".to_string(),
+        act: "edit".to_string()
     });
 
     let jwt_value = std::env::var("JWT").unwrap();

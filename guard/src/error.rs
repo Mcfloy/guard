@@ -13,5 +13,7 @@ pub enum GuardError {
     #[error("Cannot enforce: {0}")]
     CannotEnforce(String),
     #[error("{0}")]
-    PermissionError(String)
+    PermissionError(String),
+    #[error("{0}")]
+    RoleError(String)
 }

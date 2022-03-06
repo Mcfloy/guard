@@ -1,8 +1,12 @@
 use async_trait::async_trait;
+#[cfg(feature = "poem")]
+use poem_openapi::Object;
 use serde::{Deserialize, Serialize};
+
 use crate::GuardError;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "poem", derive(Object))]
 pub struct Permission {
     pub subject: String,
     pub namespace: String,
@@ -13,7 +17,7 @@ pub struct Permission {
 
 // TODO: Introduce the notion of Permission Builder for guard
 // - Edit Permission
-// - Edit Group ?
+// - Edit Role ?
 // - Is Owner of namespace ?
 
 #[async_trait]

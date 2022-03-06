@@ -1,5 +1,6 @@
 use std::io;
 use clap::{Parser, Subcommand};
+use guard::role::{Role, RoleRepository};
 use guard::permission::{Permission, PermissionRepository};
 
 #[derive(Parser, Debug)]
@@ -51,14 +52,21 @@ async fn main() -> Result<(), io::Error> {
     dotenv::dotenv().ok();
     let mut repository = guard_postgres::PostgresRepository::new().await;
     for i in 1..10000 {
-        let permission = Permission {
+        // let permission = Permission {
+        //     subject: format!("test-{}", i),
+        //     namespace: "guard".to_string(),
+        //     domain: "test".to_string(),
+        //     object: "permission".to_string(),
+        //     action: "edit".to_string()
+        // };
+        // repository.grant_permission(&permission).await;
+        let role = Role {
             subject: format!("test-{}", i),
+            name: "owner".to_string(),
             namespace: "guard".to_string(),
-            domain: "test".to_string(),
-            object: "permission".to_string(),
-            action: "edit".to_string()
+            domain: "test".to_string()
         };
-        repository.grant_permission(&permission).await;
+        repository.add_role(&role).await;
     }
     Ok(())
 }

@@ -12,6 +12,10 @@ Centralized authorization for multiple projects. Inspired of casbin.
 
 ## TODO
 
+* [ ] Roles
+  * [ ] Add a role
+  * [ ] Remove a role
+  * [ ] Get roles of a user
 * [x] Get Namespaces
 * [ ] Get Roles from a namespace
 * [x] Enforce a rule

@@ -4,7 +4,7 @@ use poem::{Error, Result};
 use poem::http::StatusCode;
 use poem::web::Data;
 use poem_openapi::{ApiResponse, Object, OpenApi};
-use poem_openapi::payload::{Json};
+use poem_openapi::payload::Json;
 use tokio::sync::Mutex;
 
 use guard::namespace::NamespaceRepository;
@@ -15,7 +15,7 @@ use crate::security::AuthenticatedUser;
 pub struct NamespacesApi;
 
 #[derive(Object)]
-pub struct NamespaceList {
+struct NamespaceList {
     subject: Option<String>,
     namespaces: Vec<String>
 }
@@ -28,7 +28,7 @@ enum NamespaceResponse {
 
 #[OpenApi]
 impl NamespacesApi {
-    #[oai(path="/namespaces", method = "get")]
+    #[oai(path = "/namespaces", method = "get")]
     async fn get_namespaces(
         &self,
         repository: Data<&Arc<Mutex<PostgresRepository>>>,
@@ -43,7 +43,7 @@ impl NamespacesApi {
         })))
     }
 
-    #[oai(path="/me/namespaces", method = "get")]
+    #[oai(path = "/me/namespaces", method = "get")]
     async fn get_my_namespaces(
         &self,
         repository: Data<&Arc<Mutex<PostgresRepository>>>,

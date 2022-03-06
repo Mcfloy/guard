@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 use async_trait::async_trait;
@@ -5,20 +6,45 @@ use linked_hash_set::LinkedHashSet;
 
 use guard::permission::{Permission, PermissionRepository};
 use guard::error::GuardError;
+use guard::role::{Role, RoleRepository};
 use guard::namespace::NamespaceRepository;
 
 pub struct InMemoryRepository {
     namespaces: LinkedHashSet<(String, String)>,
     /// Order of the parameters: Subject, Namespace, Domain, Object, Action
-    permissions: LinkedHashSet<(String, String, String, String, String)>
+    permissions: LinkedHashSet<(String, String, String, String, String)>,
+    roles: HashMap<(String, String, String), String>
 }
 
 impl InMemoryRepository {
     pub fn new() -> Self {
         InMemoryRepository {
             namespaces: LinkedHashSet::new(),
-            permissions: LinkedHashSet::new()
+            permissions: LinkedHashSet::new(),
+            roles: HashMap::new()
         }
+    }
+}
+
+#[async_trait]
+impl RoleRepository for InMemoryRepository {
+    async fn add_role(&mut self, role: &Role) -> Result<(), GuardError> {
+        self.roles.insert(
+            (role.subject.clone(), role.namespace.clone(), role.domain.clone()),
+            role.name.clone()
+        );
+        Ok(())
+    }
+
+    async fn remove_role(&mut self, role: &Role) -> Result<(), GuardError> {
+        self.roles.remove(
+            &(role.subject.clone(), role.namespace.clone(), role.domain.clone())
+        );
+        Ok(())
+    }
+
+    async fn list_roles(&self, _subject: Option<String>) -> Result<Vec<Role>, GuardError> {
+        Ok(vec![])
     }
 }
 

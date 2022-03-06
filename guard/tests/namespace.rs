@@ -1,7 +1,7 @@
 mod repository;
 
 #[cfg(test)]
-mod namespaces_should {
+mod namespace_should {
     use guard::permission::{Permission, PermissionRepository};
     use guard::namespace::NamespaceRepository;
     use crate::repository as test_repository;
