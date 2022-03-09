@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use poem::{EndpointExt, handler, Response, Route, Server};
+use poem::{EndpointExt, handler, Route, Server};
 use poem::endpoint::TowerCompatExt;
 use poem::http::StatusCode;
 use poem::i18n::I18NResources;
@@ -8,7 +8,6 @@ use poem::listener::TcpListener;
 use poem::middleware::Tracing;
 use poem_openapi::{OpenApiService};
 use tokio::sync::Mutex;
-use guard::error::GuardError;
 
 use guard_grpc::{EnforcerServer, GrpcServer};
 use guard_postgres::PostgresRepository;
@@ -16,7 +15,9 @@ use crate::api::permission::PermissionApi;
 
 use crate::api::namespace::NamespacesApi;
 use crate::api::role::RoleApi;
+use crate::api::root::RootApi;
 
+mod error;
 mod user;
 mod api;
 mod security;
@@ -45,29 +46,28 @@ async fn main() -> Result<(), std::io::Error> {
     let server = GrpcServer::new(Arc::clone(&repository));
 
     let api_service = OpenApiService::new(
-        (PermissionApi, NamespacesApi, RoleApi), "Guard API", "1.0"
+        (RootApi, PermissionApi, NamespacesApi, RoleApi), "Guard API", "1.0"
     )
-        .server(format!("/v1"));
+        .server(format!("/api"));
 
     let docs = api_service.swagger_ui();
 
     let app = Route::new()
-        .nest("/v1", api_service
+        .nest("/api", api_service
             .data(Arc::clone(&repository))
             .data(resources)
-            .catch_error(|_: GuardError| async move {
-                println!("Guard error caught");
-                Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body("Oopsie")
-            })
+            // .catch_error(|error: ForbiddenError| async move {
+            //     println!("{:?}", error);
+            //     Response::builder()
+            //         .status(StatusCode::FORBIDDEN)
+            //         .body(error.message)
+            // })
         )
-        .at("/api", root_route)
+        .nest("/docs", docs)
         .nest_no_strip("/", tonic::transport::Server::builder()
             .add_service(EnforcerServer::new(server))
             .into_service()
             .compat())
-        .nest("/docs", docs)
         .with(Tracing);
 
     // tonic::transport::Server::builder()
@@ -78,7 +78,5 @@ async fn main() -> Result<(), std::io::Error> {
     //
     Server::new(TcpListener::bind("127.0.0.1:3000"))
         .run(app)
-        .await;
-
-    Ok(())
+        .await
 }

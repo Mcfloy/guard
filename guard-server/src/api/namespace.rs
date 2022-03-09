@@ -16,6 +16,7 @@ pub struct NamespacesApi;
 
 #[derive(Object)]
 struct NamespaceList {
+    #[oai(skip_serializing_if_is_none)]
     subject: Option<String>,
     namespaces: Vec<String>
 }
