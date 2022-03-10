@@ -7,7 +7,7 @@ use crate::PostgresRepository;
 impl PermissionRepository for PostgresRepository {
     async fn enforce(&self, permission: &Permission) -> Result<bool, GuardError> {
         let result = sqlx::query!(
-            "SELECT COUNT(*) FROM guard WHERE ptype='p' AND (v0 = $1 OR v0 IN (SELECT DISTINCT v1 FROM guard WHERE ptype='g' AND v0=$1 AND v2=$2 AND (v3=$3 OR v3='*'))) AND v1=$2 AND (v2=$3 OR v2='*') AND v3=$4 AND (v4=$5 OR v4='*');",
+            "SELECT 1 AS id FROM guard WHERE ptype='p' AND (v0 IN (SELECT DISTINCT v1 FROM guard WHERE ptype='g' AND v0=$1 AND v2=$2 AND (v3=$3 OR v3='*'))) AND v1=$2 AND (v2=$3 OR v2='*') AND v3=$4 AND (v4=$5 OR v4='*');",
             permission.subject,
             permission.namespace,
             permission.domain,
@@ -18,7 +18,7 @@ impl PermissionRepository for PostgresRepository {
             .await;
 
         match result {
-            Ok(record) => Ok(record.count.unwrap_or(0) > 0),
+            Ok(record) => Ok(record.id.unwrap_or(0) != 0),
             Err(error) => Err(GuardError::CannotEnforce(error.to_string()))
         }
     }
