@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 use guard::namespace::NamespaceRepository;
 use guard_postgres::PostgresRepository;
 
-use crate::security::AuthenticatedUser;
+use crate::api::jwt::AuthenticatedUser;
 
 pub struct NamespacesApi;
 
@@ -40,22 +40,6 @@ impl NamespacesApi {
 
         Ok(NamespaceResponse::List(Json(NamespaceList {
             subject: None,
-            namespaces
-        })))
-    }
-
-    #[oai(path = "/me/namespaces", method = "get")]
-    async fn get_my_namespaces(
-        &self,
-        repository: Data<&Arc<Mutex<PostgresRepository>>>,
-        principal: AuthenticatedUser
-    ) -> Result<NamespaceResponse> {
-        let subject = principal.0.sub;
-        let namespaces = repository.0.lock().await.get_namespaces_of_subject(&subject).await
-            .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?;
-
-        Ok(NamespaceResponse::List(Json(NamespaceList {
-            subject: Some(subject),
             namespaces
         })))
     }

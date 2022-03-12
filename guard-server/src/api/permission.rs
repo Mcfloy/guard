@@ -7,13 +7,14 @@ use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::payload::{Json, PlainText};
 use serde::{Deserialize};
 use tokio::sync::Mutex;
+use guard::enforce::EnforceRequest;
 
 use guard::permission::{Permission, PermissionRepository};
 use guard_postgres::PostgresRepository;
 use crate::error::{handle_enforce, UnknownError};
 use crate::links::{Link, Links};
 
-use crate::security::AuthenticatedUser;
+use crate::api::jwt::AuthenticatedUser;
 
 pub struct PermissionApi;
 
@@ -31,8 +32,8 @@ enum PermissionResponse {
 
 #[derive(Object, Deserialize)]
 struct PermissionRequest {
-    pub subject: String,
     pub namespace: String,
+    pub role: String,
     pub domain: String,
     pub object: String,
     pub action: String,
@@ -41,8 +42,7 @@ struct PermissionRequest {
 impl Into<Permission> for PermissionRequest {
     fn into(self) -> Permission {
         Permission {
-            subject: self.subject,
-            namespace: self.namespace,
+            role: self.role,
             domain: self.domain,
             object: self.object,
             action: self.action,
@@ -83,21 +83,21 @@ impl PermissionApi {
         user: AuthenticatedUser,
     ) -> Result<PermissionResponse> {
         let form_ns = permission_form.namespace.clone();
-        let guard_permission = Permission {
+        let enforce_request = EnforceRequest {
             subject: user.0.sub,
-            namespace: "guard".to_string(),
-            domain: form_ns.to_string(),
-            object: "permission".to_string(),
-            action: "edit".to_string(),
+            namespace: "guard".to_owned(),
+            domain: form_ns.to_owned(),
+            object: "permission".to_owned(),
+            action: "edit".to_owned(),
         };
-        handle_enforce(&locale, &repository, &guard_permission).await?;
+        handle_enforce(&locale, &repository, &enforce_request).await?;
 
-        match repository.0.lock().await.grant_permission(&permission_form.0.into()).await {
+        match repository.0.lock().await.grant_permission(&form_ns, &permission_form.0.into()).await {
             Ok(_) => Ok(PermissionResponse::PermissionGranted),
             Err(_) => {
                 let message = locale
                     .text("permission-already-exists")
-                    .unwrap_or_else(|_| "error".to_string());
+                    .unwrap_or_else(|_| "error".to_owned());
                 Ok(PermissionResponse::PermissionAlreadyExists(PlainText(message)))
             }
         }
@@ -111,16 +111,16 @@ impl PermissionApi {
                                user: AuthenticatedUser,
     ) -> Result<PermissionResponse> {
         let form_ns = permission_form.namespace.clone();
-        let guard_permission = Permission {
+        let enforce_request = EnforceRequest {
             subject: user.0.sub,
-            namespace: "guard".to_string(),
-            domain: form_ns.to_string(),
-            object: "permission".to_string(),
-            action: "edit".to_string(),
+            namespace: "guard".to_owned(),
+            domain: form_ns.to_owned(),
+            object: "permission".to_owned(),
+            action: "edit".to_owned(),
         };
-        handle_enforce(&locale, &repository, &guard_permission).await?;
+        handle_enforce(&locale, &repository, &enforce_request).await?;
 
-        match repository.0.lock().await.remove_permission(&permission_form.0.into()).await {
+        match repository.0.lock().await.remove_permission(&form_ns, &permission_form.0.into()).await {
             Ok(_) => Ok(PermissionResponse::PermissionRemoved),
             Err(error) => {
                 tracing::warn!("Error while removing permission {}", error.to_string());

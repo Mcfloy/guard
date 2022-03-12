@@ -48,7 +48,6 @@ flowchart TB
     NamespacesInfo["HEAD /namespaces"]
     NamespacesList["GET /namespaces"]
     NamespacesCreate["POST /namespaces"]
-    NamespacesTransfer["POST /namespaces/transfer"]
     NamespacesDelete["DELETE /namespaces/{id}"]
     NamespacesId["GET /namespaces/{id}"]
     NamespacesRoles["GET /namespaces/{id}/roles"]
@@ -63,7 +62,6 @@ flowchart TB
     NamespacesId --> NamespacesDeleteRoles
     NamespacesId --> NamespacesRoles
     NamespacesList --> NamespacesId
-    NamespacesInfo --> NamespacesTransfer
     NamespacesInfo --> NamespacesList
     NamespacesInfo --> NamespacesCreate
     Root --> NamespacesInfo

@@ -66,7 +66,7 @@ async fn main() -> Result<(), io::Error> {
             namespace: "guard".to_string(),
             domain: "test".to_string()
         };
-        repository.add_role(&role).await;
+        repository.assign_role(&role).await;
     }
     Ok(())
 }

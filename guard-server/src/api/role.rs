@@ -9,7 +9,7 @@ use tokio::sync::Mutex;
 use guard::role::{Role, RoleRepository};
 use guard_postgres::PostgresRepository;
 
-use crate::security::AuthenticatedUser;
+use crate::api::jwt::AuthenticatedUser;
 use crate::StatusCode;
 
 pub struct RoleApi;
@@ -34,7 +34,7 @@ impl RoleApi {
         user: AuthenticatedUser
     ) -> Result<RoleResponse> {
         let roles = repository.0.lock().await
-            .list_roles(Some(user.0.sub)).await
+            .list_roles(&user.0.namespace, "*", &user.0.sub).await
             .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?;
 
         Ok(RoleResponse::List(Json(RoleList {

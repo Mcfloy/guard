@@ -4,11 +4,11 @@ use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 
 pub use definitions::enforcer_client::EnforcerClient;
-use guard::permission::{Permission, PermissionRepository};
+use guard::enforce::{EnforceRepository, EnforceRequest};
 use guard::jwt;
 use guard::jwt::Principal;
 
-pub use crate::definitions::{EnforceRequest, EnforcerResponse};
+pub use crate::definitions::{EnforceRequest as ServerEnforceRequest, EnforcerResponse};
 use crate::definitions::enforcer_server::Enforcer;
 pub use crate::definitions::enforcer_server::EnforcerServer;
 
@@ -16,20 +16,20 @@ mod definitions {
     tonic::include_proto!("guard");
 }
 
-pub struct GrpcServer<PermissionRepo: PermissionRepository> {
-    permission_repository: Arc<Mutex<PermissionRepo>>
+pub struct GrpcServer<EnforceRepo: EnforceRepository> {
+    permission_repository: Arc<Mutex<EnforceRepo>>
 }
 
-impl<PermissionRepo: PermissionRepository> GrpcServer<PermissionRepo> {
-    pub fn new(repository: Arc<Mutex<PermissionRepo>>) -> Self {
+impl<EnforceRepo: EnforceRepository> GrpcServer<EnforceRepo> {
+    pub fn new(repository: Arc<Mutex<EnforceRepo>>) -> Self {
         GrpcServer {
             permission_repository: repository,
         }
     }
 }
 
-fn to_permission(principal: &Principal, request: &EnforceRequest) -> Permission {
-    Permission {
+fn to_permission(principal: &Principal, request: &ServerEnforceRequest) -> EnforceRequest {
+    EnforceRequest {
         subject: principal.sub.clone().to_lowercase(),
         namespace: principal.namespace.clone().to_lowercase(),
         domain: request.dom.clone().to_lowercase(),
@@ -39,8 +39,8 @@ fn to_permission(principal: &Principal, request: &EnforceRequest) -> Permission 
 }
 
 #[tonic::async_trait]
-impl<R: PermissionRepository> Enforcer for GrpcServer<R> {
-    async fn enforce(&self, request: Request<EnforceRequest>) -> Result<Response<EnforcerResponse>, Status> {
+impl<R: EnforceRepository> Enforcer for GrpcServer<R> {
+    async fn enforce(&self, request: Request<ServerEnforceRequest>) -> Result<Response<EnforcerResponse>, Status> {
         let principal = match request.metadata().get(AUTHORIZATION_HEADER) {
             Some(header) => {
                 jwt::decode(header.to_str().unwrap())
@@ -62,7 +62,7 @@ impl<R: PermissionRepository> Enforcer for GrpcServer<R> {
     }
 }
 
-fn validate_request(request: EnforceRequest) -> bool {
+fn validate_request(request: ServerEnforceRequest) -> bool {
     if request.dom.is_empty()
         || request.obj.is_empty()
         || request.act.is_empty() {

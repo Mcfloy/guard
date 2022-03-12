@@ -1,8 +1,6 @@
 use std::collections::HashMap;
-use std::error::Error;
-
 use async_trait::async_trait;
-use linked_hash_set::LinkedHashSet;
+use guard::enforce::{EnforceRequest, EnforceRepository};
 
 use guard::permission::{Permission, PermissionRepository};
 use guard::error::GuardError;
@@ -10,67 +8,81 @@ use guard::role::{Role, RoleRepository};
 use guard::namespace::NamespaceRepository;
 
 pub struct InMemoryRepository {
-    namespaces: LinkedHashSet<(String, String)>,
-    /// Order of the parameters: Subject, Namespace, Domain, Object, Action
-    permissions: LinkedHashSet<(String, String, String, String, String)>,
-    roles: HashMap<(String, String, String), String>
+    /// Map with namespace as key
+    roles: HashMap<String, Vec<Role>>,
+    /// Map with namespace as key
+    permissions: HashMap<String, Vec<Permission>>,
 }
 
 impl InMemoryRepository {
     pub fn new() -> Self {
         InMemoryRepository {
-            namespaces: LinkedHashSet::new(),
-            permissions: LinkedHashSet::new(),
-            roles: HashMap::new()
+            permissions: HashMap::new(),
+            roles: HashMap::new(),
         }
+    }
+}
+
+impl InMemoryRepository {
+    fn get_permissions(&mut self, namespace: &str) -> Result<&mut Vec<Permission>, GuardError> {
+        self.permissions.get_mut(namespace)
+            .ok_or(GuardError::PermissionError("Namespace not found.".to_owned()))
     }
 }
 
 #[async_trait]
 impl RoleRepository for InMemoryRepository {
-    async fn add_role(&mut self, role: &Role) -> Result<(), GuardError> {
-        self.roles.insert(
-            (role.subject.clone(), role.namespace.clone(), role.domain.clone()),
-            role.name.clone()
-        );
+    async fn assign_role(&mut self, namespace: &str, role: &Role) -> Result<(), GuardError> {
+        let roles = self.roles
+            .entry(namespace.to_string())
+            .or_insert(Vec::new());
+
+        if roles.contains(&role) {
+            return Err(GuardError::RoleError("Role already added.".to_owned()));
+        }
+
+        roles.push(role.clone());
         Ok(())
     }
 
-    async fn remove_role(&mut self, role: &Role) -> Result<(), GuardError> {
-        self.roles.remove(
-            &(role.subject.clone(), role.namespace.clone(), role.domain.clone())
-        );
+    async fn remove_role(&mut self, namespace: &str, role: &Role) -> Result<(), GuardError> {
+        let roles = self.roles
+            .entry(namespace.to_owned())
+            .or_insert(Vec::new());
+
+        if !roles.contains(&role) {
+            return Err(GuardError::RoleError("Role wasn't found.".to_owned()));
+        }
+        roles.retain(|r| r != role);
         Ok(())
     }
 
-    async fn list_roles(&self, _subject: Option<String>) -> Result<Vec<Role>, GuardError> {
-        Ok(vec![])
+    async fn list_roles(&self, namespace: &str, domain: &str, subject: &str) -> Result<Vec<Role>, GuardError> {
+        let roles = self.roles.get(namespace)
+            .ok_or(GuardError::RoleError("No namespace found.".to_owned()))?;
+
+        Ok(
+            roles.iter()
+                .filter(|role| role.subject == subject && role.domain == domain)
+                .cloned()
+                .collect::<Vec<Role>>()
+        )
     }
 }
 
 #[async_trait]
 impl NamespaceRepository for InMemoryRepository {
-    async fn get_namespaces(&self) -> Result<Vec<String>, Box<dyn Error>> {
-        Ok(
-            self.namespaces
-                .iter()
-                .map(|(ns, _sub)| ns)
-                .cloned()
-                .collect::<Vec<String>>()
-        )
+    async fn create_namespace(&mut self, namespace: &str) -> Result<(), GuardError> {
+        match self.roles.insert(namespace.to_owned(), Vec::new()) {
+            None => Ok(()),
+            Some(_) => Err(GuardError::NamespaceError("Namespace already exists.".to_owned()))
+        }
     }
 
-    async fn get_namespaces_of_subject(&self, subject: &str) -> Result<Vec<String>, Box<dyn Error>> {
-        let owned_subject = String::from(subject);
+    async fn get_namespaces(&self) -> Result<Vec<String>, GuardError> {
         Ok(
-            self.namespaces
-                .iter()
-                .filter_map(|(ns, sub)| {
-                    match owned_subject.eq(sub) {
-                        true => Some(ns),
-                        false => None
-                    }
-                })
+            self.permissions
+                .keys()
                 .cloned()
                 .collect::<Vec<String>>()
         )
@@ -78,79 +90,69 @@ impl NamespaceRepository for InMemoryRepository {
 }
 
 #[async_trait]
-impl PermissionRepository for InMemoryRepository {
-    async fn enforce(&self, permission: &Permission) -> Result<bool, Box<dyn Error>> {
-        let mut parameters = to_parameters(permission);
-        match self.permissions.contains(&parameters) {
-            true => Ok(true),
-            false => {
-                parameters.4 = "*".to_string();
-                match self.permissions.contains(&parameters) {
-                    true => Ok(true),
-                    false => {
-                        parameters.2 = "*".to_string();
-                        Ok(self.permissions.contains(&parameters))
-                    }
-                }
-            }
+impl EnforceRepository for InMemoryRepository {
+    async fn grant_permission(&mut self, namespace: &str, permission: &Permission) -> Result<(), GuardError> {
+        let permissions = self.permissions.get_mut(namespace)
+                .ok_or_else(|| GuardError::PermissionError("Namespace not found.".to_owned()))?;
+
+        if permissions.contains(permission) {
+            return Err(GuardError::PermissionError("Permission already exists.".to_owned()));
         }
+        permissions.push(permission.clone());
+        Ok(())
     }
 
-    async fn grant_permission(&mut self, permission: &Permission) -> Result<(), Box<dyn Error>> {
-        let parameters = to_parameters(permission);
-        if self.permissions.contains(&parameters) {
-            Err(Box::new(GuardError::PermissionAlreadyExists))
-        } else {
-            self.permissions.insert(to_parameters(permission));
-            self.namespaces.insert((permission.namespace.clone(), permission.subject.clone()));
-            Ok(())
+    async fn remove_permission(&mut self, namespace: &str, permission: &Permission) -> Result<(), GuardError> {
+        let permissions = self.get_permissions(namespace)?;
+
+        if !permissions.contains(permission) {
+            return Err(GuardError::PermissionError("No permission found.".to_string()))
         }
+        permissions.retain(|p| p != permission);
+        Ok(())
     }
 
-    async fn remove_permission(&mut self, permission: &Permission) -> Result<(), Box<dyn Error>> {
-        let parameters = to_parameters(permission);
-        if self.permissions.contains(&parameters) {
-            self.permissions.remove(&parameters);
-            Ok(())
-        } else {
-            Err(Box::new(GuardError::CannotRemovePermission))
-        }
+    async fn contains_permission(&mut self, namespace: &str, permission: &Permission) -> Result<bool, GuardError> {
+        Ok(self.get_permissions(namespace)?.contains(permission))
     }
 
-    async fn contains_permission(&mut self, permission: &Permission) -> Result<bool, GuardError> {
-        let parameters = to_parameters(permission);
-        Ok(self.permissions.contains(&parameters))
-    }
-
-    async fn list_permissions_from_namespace(&mut self, _namespace: &str) -> Result<Vec<Permission>, Box<dyn Error>> {
-        // DEVNOTE: This is a dumb workaround, but developing a column by column filter seems a bit exhausting.
-        Ok(self.permissions
+    async fn list_permissions(&mut self, namespace: &str) -> Result<Vec<Permission>, GuardError> {
+        Ok(self.get_permissions(namespace)?
             .iter()
-            .map(|fields| to_permission(fields))
+            .cloned()
             .collect::<Vec<Permission>>()
         )
     }
 }
 
-type Parameters = (String, String, String, String, String);
+#[async_trait]
+impl EnforceRepository for InMemoryRepository {
+    async fn enforce(&self, request: &EnforceRequest) -> Result<bool, GuardError> {
+        let roles = self.roles
+            .get(&request.namespace)
+            .ok_or_else(|| GuardError::EnforceError("Namespace not found.".to_owned()))?
+            .iter()
+            .filter(|role| {
+                let role = *role;
+                role.subject.as_str() == request.subject.as_str() && (role.domain.as_str() == "*" || role.domain.as_str() == request.domain.as_str())
+            })
+            .map(|role| role.role.clone())
+            .collect::<Vec<String>>();
 
-fn to_permission(parameters: &Parameters) -> Permission {
-    Permission {
-        subject: parameters.0.clone(),
-        namespace: parameters.1.clone(),
-        domain: parameters.2.clone(),
-        object: parameters.3.clone(),
-        action: parameters.4.clone()
+        let permissions = self.permissions
+            .get(&request.namespace)
+            .ok_or_else(|| GuardError::EnforceError("Namespace not found.".to_owned()))?;
+
+        Ok(permissions
+            .iter()
+            .find(|permission| {
+                let permission = *permission;
+                roles.contains(&permission.role)
+                    && (permission.domain.as_str() == "*" || permission.domain.as_str() == &request.domain)
+                    && permission.object.as_str() == &request.object
+                    && permission.action.as_str() == &request.action
+            })
+            .is_some()
+        )
     }
 }
-
-fn to_parameters(permission: &Permission) -> Parameters {
-    (
-        permission.subject.clone(),
-        permission.namespace.clone(),
-        permission.domain.clone(),
-        permission.object.clone(),
-        permission.action.clone()
-    )
-}
-

@@ -12,7 +12,7 @@ pub struct Link {
 
 impl Link {
     pub fn new(href: &str, method: &str, title: &str) -> Self {
-        Link {
+        Self {
             href: href.to_string(),
             method: method.to_string(),
             title: title.to_string()
@@ -27,7 +27,7 @@ pub struct Links {
 
 impl Links {
     pub fn new() -> Self {
-        Links {
+        Self {
             links: HashMap::new()
         }
     }

@@ -4,7 +4,7 @@ use rand::Rng;
 use tonic::metadata::MetadataValue;
 use guard::jwt::{encode, Principal};
 
-use guard_grpc::EnforceRequest;
+use guard_grpc::ServerEnforceRequest;
 
 async fn call_grpc(number: u32) {
 
@@ -13,17 +13,17 @@ async fn call_grpc(number: u32) {
         .unwrap();
 
     let principal: Principal = Principal {
-        sub: format!("owner-{}", number),
-        namespace: "guard".to_string(),
+        sub: format!("test-{}@ext.leroymerlin.fr", number),
+        namespace: "guard".to_owned(),
         exp: 2177452800
     };
 
     let token = encode(&principal).unwrap();
 
-    let mut request = tonic::Request::new(EnforceRequest {
-        dom: "test".to_string(),
-        obj: "permission".to_string(),
-        act: "edit".to_string()
+    let mut request = tonic::Request::new(ServerEnforceRequest {
+        dom: format!("test-{}", number),
+        obj: "permission".to_owned(),
+        act: "edit".to_owned()
     });
 
     // let jwt_value = std::env::var("JWT").unwrap();
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut rng = rand::thread_rng();
 
-    for _ in 1..100 {
+    for _ in 1..10000 {
         let number: u32 = rng.gen_range(1000..1000000);
         let now = Instant::now();
         call_grpc(number).await;

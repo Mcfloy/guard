@@ -1,8 +1,7 @@
 use poem::{Request, Result};
 use poem::i18n::Locale;
 use poem_openapi::{ApiResponse, OpenApi};
-use poem_openapi::payload::Json;
-use crate::api::jwt::extractor::extract_jwt;
+use crate::api::jwt::extract_jwt;
 
 use crate::links::{Link, Links};
 

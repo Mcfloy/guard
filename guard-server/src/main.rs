@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use poem::{EndpointExt, handler, Route, Server};
+use poem::{EndpointExt, Route, Server};
 use poem::endpoint::TowerCompatExt;
 use poem::http::StatusCode;
 use poem::i18n::I18NResources;
 use poem::listener::TcpListener;
 use poem::middleware::Tracing;
-use poem_openapi::{OpenApiService};
+use poem_openapi::OpenApiService;
 use tokio::sync::Mutex;
 
 use guard_grpc::{EnforcerServer, GrpcServer};
@@ -18,16 +18,8 @@ use crate::api::role::RoleApi;
 use crate::api::root::RootApi;
 
 mod error;
-mod user;
 mod api;
-mod security;
 mod links;
-
-
-#[handler]
-fn root_route() -> String {
-    "ok".to_string()
-}
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {

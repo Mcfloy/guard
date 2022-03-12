@@ -1,6 +1,7 @@
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
 
+mod enforce;
 mod role;
 mod namespace;
 mod permission;

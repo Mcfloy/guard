@@ -1,5 +1,7 @@
 use std::error::Error;
 
+#[cfg(feature = "with-poem")]
+use poem_openapi::Object;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -11,6 +13,7 @@ lazy_static! {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "with-poem", derive(Object))]
 pub struct Principal {
     pub sub: String,
     pub namespace: String,

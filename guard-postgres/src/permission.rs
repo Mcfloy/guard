@@ -1,38 +1,22 @@
 use async_trait::async_trait;
+use sqlx::Row;
 use guard::permission::{Permission, PermissionRepository};
 use guard::error::GuardError;
 use crate::PostgresRepository;
 
 #[async_trait]
 impl PermissionRepository for PostgresRepository {
-    async fn enforce(&self, permission: &Permission) -> Result<bool, GuardError> {
-        let result = sqlx::query!(
-            "SELECT 1 AS id FROM guard WHERE ptype='p' AND (v0 IN (SELECT DISTINCT v1 FROM guard WHERE ptype='g' AND v0=$1 AND v2=$2 AND (v3=$3 OR v3='*'))) AND v1=$2 AND (v2=$3 OR v2='*') AND v3=$4 AND (v4=$5 OR v4='*');",
-            permission.subject,
-            permission.namespace,
-            permission.domain,
-            permission.object,
-            permission.action
-        )
-            .fetch_one(&self.pool)
-            .await;
+    async fn grant_permission(&mut self, namespace: &str, permission: &Permission) -> Result<(), GuardError> {
+        let query = format!(
+            "INSERT INTO namespace_{} VALUES ($1, $2, $3, $4)",
+            namespace
+        );
 
-        match result {
-            Ok(record) => Ok(record.id.unwrap_or(0) != 0),
-            Err(error) => Err(GuardError::CannotEnforce(error.to_string()))
-        }
-    }
-
-    async fn grant_permission(&mut self, permission: &Permission) -> Result<(), GuardError> {
-        let result = sqlx::query!(
-            "INSERT INTO guard (ptype, v0, v1, v2, v3, v4) VALUES ($1, $2, $3, $4, $5, $6);",
-            "p",
-            permission.subject,
-            permission.namespace,
-            permission.domain,
-            permission.object,
-            permission.action
-        )
+        let result = sqlx::query(&query)
+            .bind(&permission.role)
+            .bind(&permission.domain)
+            .bind(&permission.object)
+            .bind(&permission.action)
             .execute(&self.pool)
             .await;
 
@@ -42,16 +26,16 @@ impl PermissionRepository for PostgresRepository {
         }
     }
 
-    async fn remove_permission(&mut self, permission: &Permission) -> Result<(), GuardError> {
-        let result = sqlx::query!(
-            "DELETE FROM guard WHERE ptype=$1 AND v0=$2 AND v1=$3 AND v2=$4 AND v3=$5 AND v4=$6;",
-            "p",
-            permission.subject,
-            permission.namespace,
-            permission.domain,
-            permission.object,
-            permission.action
-        )
+    async fn remove_permission(&mut self, namespace: &str, permission: &Permission) -> Result<(), GuardError> {
+        let query = format!(
+            "DELETE FROM namespace_{} WHERE role=$1 AND domain=$2 AND object=$3 AND action=$4;",
+            namespace
+        );
+        let result = sqlx::query(&query)
+            .bind(&permission.role)
+            .bind(&permission.domain)
+            .bind(&permission.object)
+            .bind(&permission.action)
             .execute(&self.pool)
             .await;
 
@@ -61,48 +45,59 @@ impl PermissionRepository for PostgresRepository {
         }
     }
 
-    async fn contains_permission(&mut self, permission: &Permission) -> Result<bool, GuardError> {
-        let result = sqlx::query!(
-            "SELECT COUNT(1) FROM guard WHERE ptype='p' AND v0=$1 AND v1=$2 AND v2=$3 AND v3=$4 AND v4=$5",
-            permission.subject,
-            permission.namespace,
-            permission.domain,
-            permission.object,
-            permission.action
-        )
+    async fn contains_permission(&mut self, namespace: &str, permission: &Permission) -> Result<bool, GuardError> {
+        let query = format!(
+            "SELECT true FROM namespace_{} WHERE role=$1 AND domain=$2 AND object=$3 AND action=$4;",
+            namespace
+        );
+
+        let result: Result<(bool, ), sqlx::Error> = sqlx::query_as(&query)
+            .bind(&permission.role)
+            .bind(&permission.domain)
+            .bind(&permission.object)
+            .bind(&permission.action)
             .fetch_one(&self.pool)
             .await;
 
         match result {
-            Ok(record) => Ok(record.count.unwrap_or(0) > 0),
+            Ok(record) => Ok(record.0),
             Err(_) => Err(GuardError::CannotGetPermission)
         }
     }
 
-    async fn list_permissions_from_namespace(&mut self, namespace: &str) -> Result<Vec<Permission>, GuardError> {
-        let result = sqlx::query!(
-            "SELECT * FROM guard WHERE ptype='p' AND v1=$1",
-            namespace
-        )
+    async fn list_permissions(&mut self, namespace: &str) -> Result<Vec<Permission>, GuardError> {
+        let query = format!("SELECT * FROM namespace_{};", namespace);
+        let result = sqlx::query(&query)
             .fetch_all(&self.pool)
             .await;
 
-        match result {
-            Ok(records) => Ok(
-                records.iter()
-                    .map(move |record| {
-                        let action = String::from(record.v4.as_ref().unwrap());
-                        Permission {
-                            subject: record.v0.clone(),
-                            namespace: record.v1.clone(),
-                            domain: record.v2.clone(),
-                            object: record.v3.clone(),
-                            action
-                        }
-                    })
-                    .collect()
-            ),
-            Err(_) => Err(GuardError::CannotGetPermission)
+        if result.is_err() {
+            return Err(GuardError::CannotGetPermission);
         }
+
+        let rows = result.unwrap();
+        let mut permissions = vec![];
+
+        let parsing_error = GuardError::PermissionError("Cannot parse row.".to_owned());
+
+        for row in rows {
+            let role = row.try_get("role")
+                .map_err(|_| parsing_error.clone())?;
+            let domain = row.try_get("domain")
+                .map_err(|_| parsing_error.clone())?;
+            let object = row.try_get("object")
+                .map_err(|_| parsing_error.clone())?;
+            let action = row.try_get("action")
+                .map_err(|_| parsing_error.clone())?;
+
+            permissions.push(Permission {
+                role,
+                domain,
+                object,
+                action,
+            })
+        }
+
+        Ok(permissions)
     }
 }

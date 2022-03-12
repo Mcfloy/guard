@@ -1,20 +1,22 @@
 use async_trait::async_trait;
+use sqlx::{Error, Row};
+use sqlx::postgres::{PgQueryResult};
+
 use guard::error::GuardError;
 use guard::role::{Role, RoleRepository};
+
 use crate::PostgresRepository;
 
 #[async_trait]
 impl RoleRepository for PostgresRepository {
-    async fn add_role(&self, role: &Role) -> Result<(), GuardError> {
-        let result = sqlx::query!(
-            "INSERT INTO guard (ptype, v0, v1, v2, v3) VALUES ('g', $1, $2, $3, $4)",
-            role.subject,
-            role.name,
-            role.namespace,
-            role.domain
-        )
-            .execute(&self.pool)
-            .await;
+    async fn assign_role(&mut self, namespace: &str, role: &Role) -> Result<(), GuardError> {
+        // TODO: Check namespace existence first ?
+        let role_table_name = format!("role_{}", namespace);
+        let query = format!(
+            "INSERT INTO {} VALUES ($1, $2, $3)",
+            role_table_name
+        );
+        let result = self.execute_role_query(&role, &query).await;
 
         match result {
             Ok(_) => Ok(()),
@@ -22,16 +24,13 @@ impl RoleRepository for PostgresRepository {
         }
     }
 
-    async fn remove_role(&self, role: &Role) -> Result<(), GuardError> {
-        let result = sqlx::query!(
-            "DELETE FROM guard WHERE ptype='g' AND v0=$1 AND v1=$2 AND v2=$3 AND v3=$4",
-            role.subject,
-            role.name,
-            role.namespace,
-            role.domain
-        )
-            .execute(&self.pool)
-            .await;
+    async fn remove_role(&mut self, namespace: &str, role: &Role) -> Result<(), GuardError> {
+        let role_table_name = format!("role_{}", namespace);
+        let query = format!(
+            "DELETE FROM {} WHERE subject=$1 AND domain=$2 AND role=$3",
+            role_table_name
+        );
+        let result = self.execute_role_query(&role, &query).await;
 
         match result {
             Ok(_) => Ok(()),
@@ -39,28 +38,52 @@ impl RoleRepository for PostgresRepository {
         }
     }
 
-    async fn list_roles(&self, subject: Option<String>) -> Result<Vec<Role>, GuardError> {
-        let result = sqlx::query!(
-            "SELECT * FROM guard WHERE ptype='g' AND v0 = $1",
-            subject
-        )
+    async fn list_roles(&self, namespace: &str, domain: &str, subject: &str) -> Result<Vec<Role>, GuardError> {
+        let query = format!(
+            "SELECT * FROM role_{} WHERE subject=$1 AND domain=$2",
+            namespace
+        );
+        let result = sqlx::query(&query)
+            .bind(&subject)
+            .bind(&domain)
             .fetch_all(&self.pool)
             .await;
 
-        match result {
-            Ok(records) => Ok(
-                records.iter()
-                    .map(move |record| {
-                        Role {
-                            subject: record.v0.clone(),
-                            name: record.v1.clone(),
-                            namespace: record.v2.clone(),
-                            domain: record.v3.clone()
-                        }
-                    })
-                    .collect()
-            ),
-            Err(_) => Err(GuardError::RoleError("Cannot get roles".to_string()))
+        if result.is_err() {
+            return Err(GuardError::RoleError("Cannot get roles".to_string()));
         }
+
+        let rows = result.unwrap();
+        let mut roles = vec![];
+
+        let parsing_error = GuardError::RoleError("Cannot parse row".to_owned());
+
+        for row in rows {
+            let subject = row.try_get("subject")
+                .map_err(|_| parsing_error.clone())?;
+            let domain = row.try_get("domain")
+                .map_err(|_| parsing_error.clone())?;
+            let role = row.try_get("role")
+                .map_err(|_| parsing_error.clone())?;
+
+            roles.push(Role {
+                subject,
+                domain,
+                role,
+            });
+        }
+        Ok(roles)
+    }
+}
+
+impl PostgresRepository {
+    async fn execute_role_query(&self, role: &&Role, query: &String) -> Result<PgQueryResult, Error> {
+        let result = sqlx::query(&query)
+            .bind(&role.subject)
+            .bind(&role.domain)
+            .bind(&role.role)
+            .execute(&self.pool)
+            .await;
+        result
     }
 }

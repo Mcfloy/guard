@@ -11,11 +11,10 @@ mod role_should {
 
         let role = Role {
             subject: "alice".to_string(),
-            name: "owner".to_string(),
-            namespace: "namespace1".to_string(),
-            domain: "domain".to_string()
+            domain: "domain".to_string(),
+            role: "owner".to_string()
         };
-        let result = repository.add_role(&role).await;
+        let result = repository.assign_role("namespace-test", &role).await;
         assert_eq!(result.is_ok());
     }
 
@@ -25,14 +24,13 @@ mod role_should {
 
         let role = Role {
             subject: "alice".to_string(),
-            name: "owner".to_string(),
-            namespace: "namespace1".to_string(),
-            domain: "domain".to_string()
+            domain: "domain".to_string(),
+            role: "owner".to_string(),
         };
-        let successful_addition = repository.add_role(&role).await;
+        let successful_addition = repository.assign_role("namespace-test", &role).await;
         assert_eq!(successful_addition.is_ok());
 
-        let failed_addition = repository.add_role(&role).await;
+        let failed_addition = repository.assign_role("namespace-test", &role).await;
         assert_eq!(failed_addition.is_err());
     }
 
@@ -42,14 +40,13 @@ mod role_should {
 
         let role = Role {
             subject: "alice".to_string(),
-            name: "owner".to_string(),
-            namespace: "namespace1".to_string(),
-            domain: "domain".to_string()
+            domain: "domain".to_string(),
+            role: "owner".to_string(),
         };
-        let successful_addition = repository.add_role(&role).await;
+        let successful_addition = repository.assign_role("namespace-test", &role).await;
         assert_eq!(successful_addition.is_ok());
 
-        let successful_removal = repository.remove_role(&role).await;
+        let successful_removal = repository.remove_role("namespace-test", &role).await;
         assert_eq!(successful_removal.is_ok());
     }
 }
