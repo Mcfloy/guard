@@ -20,7 +20,7 @@ impl RoleRepository for PostgresRepository {
 
         match result {
             Ok(_) => Ok(()),
-            Err(_) => Err(GuardError::RoleError("Cannot add role".to_string()))
+            Err(_) => Err(GuardError::RoleError("Cannot add role".to_owned()))
         }
     }
 
@@ -34,7 +34,7 @@ impl RoleRepository for PostgresRepository {
 
         match result {
             Ok(_) => Ok(()),
-            Err(_) => Err(GuardError::RoleError("Cannot remove role".to_string()))
+            Err(_) => Err(GuardError::RoleError("Cannot remove role".to_owned()))
         }
     }
 
@@ -50,7 +50,7 @@ impl RoleRepository for PostgresRepository {
             .await;
 
         if result.is_err() {
-            return Err(GuardError::RoleError("Cannot get roles".to_string()));
+            return Err(GuardError::RoleError("Cannot get roles".to_owned()));
         }
 
         let rows = result.unwrap();

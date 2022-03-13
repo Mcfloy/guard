@@ -13,7 +13,7 @@ pub struct PostgresRepository {
 impl PostgresRepository {
     pub async fn new() -> Self {
         let db_uri = std::env::var("DATABASE_URL")
-            .unwrap_or("postgres://localhost:5432/postgres".to_string());
+            .unwrap_or("postgres://localhost:5432/postgres".to_owned());
 
         let pool = PgPoolOptions::new()
             .max_connections(5)
