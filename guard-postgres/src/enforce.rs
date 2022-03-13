@@ -2,10 +2,14 @@ use guard::enforce::{EnforceRepository, EnforceRequest};
 use guard::error::GuardError;
 use crate::PostgresRepository;
 use async_trait::async_trait;
+use guard::namespace::NamespaceRepository;
 
 #[async_trait]
 impl EnforceRepository for PostgresRepository {
     async fn enforce(&self, request: &EnforceRequest) -> Result<bool, GuardError> {
+        if false == self.does_namespace_exists(&request.namespace).await? {
+            return Ok(false);
+        }
         // Check if namespace exists first
         let role_table_name = format!("role_{}", request.namespace);
         let namespace_table_name = format!("namespace_{}", request.namespace);

@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::query;
+use sqlx::{Error, query};
 use guard::error::GuardError;
 use guard::namespace::NamespaceRepository;
 use crate::PostgresRepository;
@@ -54,7 +54,21 @@ impl NamespaceRepository for PostgresRepository {
 
         match result {
             Ok(records) => Ok(records.iter().map(|r| r.id.to_owned()).collect()),
-            Err(_) => Err(GuardError::NamespaceError("Cannot get namespaces".to_string()))
+            Err(_) => Err(GuardError::NamespaceError("Cannot get namespaces".to_owned()))
+        }
+    }
+
+    async fn does_namespace_exists(&self, namespace: &str) -> Result<bool, GuardError> {
+        let result = sqlx::query!("SELECT true FROM namespace WHERE id=$1", namespace)
+            .fetch_one(&self.pool)
+            .await;
+
+        match result {
+            Ok(record) => Ok(record.bool.unwrap_or(false)),
+            Err(error) => match error {
+                Error::RowNotFound => Ok(false),
+                _ => Err(GuardError::NamespaceError("Can't determine if namespace exists.".to_owned()))
+            }
         }
     }
 }

@@ -10,3 +10,4 @@ async-trait = "0.1.52"
 guard = { path = "../guard" }
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
 sqlx = { version = "0.5.11", features = ["macros", "runtime-tokio-native-tls", "postgres", "offline"] }
+tracing = "0.1.31"
