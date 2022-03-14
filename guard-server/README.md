@@ -42,16 +42,16 @@
 ```mermaid
 flowchart TB
     Root["HEAD /"]
-    PermissionsInfo["HEAD /permissions"]
-    PermissionsGrant["POST /permissions"]
-    PermissionsRemove["DELETE /permissions"]
     NamespacesInfo["HEAD /namespaces"]
     NamespacesList["GET /namespaces"]
     NamespacesCreate["POST /namespaces"]
     NamespacesDelete["DELETE /namespaces/{id}"]
-    NamespacesId["GET /namespaces/{id}"]
+    NamespacesId["HEAD /namespaces/{id}"]
     NamespacesRoles["GET /namespaces/{id}/roles"]
-    NamespacesDeleteRoles["DELETE /namespaces/{id}/roles/{name}"]
+    NamespacesCreateRoles["CREATE /namespaces/{id}/roles"]
+    NamespacesDeleteRoles["DELETE /namespaces/{id}/roles"]
+    NamespacesCreatePermissions["CREATE /namespaces/{id}/permissions"]
+    NamespacesDeletePermissions["DELETE /namespaces/{id}/permissions"]
     MeInfo["GET /me"]
     MeRoles["GET /me/roles"]
     MeNamespaces["GET /me/namespaces"]
@@ -60,12 +60,12 @@ flowchart TB
     Root --> MeInfo
     NamespacesId --> NamespacesDelete
     NamespacesId --> NamespacesDeleteRoles
+    NamespacesId --> NamespacesCreateRoles
+    NamespacesId --> NamespacesDeletePermissions
+    NamespacesId --> NamespacesCreatePermissions
     NamespacesId --> NamespacesRoles
     NamespacesList --> NamespacesId
     NamespacesInfo --> NamespacesList
     NamespacesInfo --> NamespacesCreate
     Root --> NamespacesInfo
-    PermissionsInfo --> PermissionsRemove
-    PermissionsInfo --> PermissionsGrant
-    Root --> PermissionsInfo
 ```

@@ -10,7 +10,6 @@ impl EnforceRepository for PostgresRepository {
         if false == self.does_namespace_exists(&request.namespace).await? {
             return Ok(false);
         }
-        // Check if namespace exists first
         let role_table_name = format!("role_{}", request.namespace);
         let namespace_table_name = format!("namespace_{}", request.namespace);
         let query: String = format!(

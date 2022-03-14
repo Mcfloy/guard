@@ -15,11 +15,11 @@ mod enforcer_should {
         repository.create_namespace("namespace-test").await.unwrap();
 
         let diona_request = EnforceRequest {
-            subject: "diona-test".to_string(),
-            namespace: "namespace-test".to_string(),
-            domain: "domain-test".to_string(),
-            object: "object-test".to_string(),
-            action: "action-test".to_string()
+            subject: "diona-test".to_owned(),
+            namespace: "namespace-test".to_owned(),
+            domain: "domain-test".to_owned(),
+            object: "object-test".to_owned(),
+            action: "action-test".to_owned()
         };
 
         let result = repository.enforce(&diona_request).await.unwrap();
@@ -52,11 +52,11 @@ mod enforcer_should {
         assert!(assignment_result.is_ok());
 
         let eula_request = EnforceRequest {
-            subject: "eula-test".to_string(),
-            namespace: "namespace-test".to_string(),
-            domain: "domain-test".to_string(),
-            object: "object-test".to_string(),
-            action: "action-test".to_string()
+            subject: "eula-test".to_owned(),
+            namespace: "namespace-test".to_owned(),
+            domain: "domain-test".to_owned(),
+            object: "object-test".to_owned(),
+            action: "action-test".to_owned()
         };
 
         let result = repository.enforce(&eula_request).await.unwrap();
@@ -89,21 +89,21 @@ mod enforcer_should {
         assert!(assignment_result.is_ok());
 
         let fischl_permission = EnforceRequest {
-            subject: "fischl-test".to_string(),
-            namespace: "namespace-test".to_string(),
-            domain: "domain-test".to_string(),
-            object: "object-test".to_string(),
-            action: "action-test".to_string()
+            subject: "fischl-test".to_owned(),
+            namespace: "namespace-test".to_owned(),
+            domain: "domain-test".to_owned(),
+            object: "object-test".to_owned(),
+            action: "action-test".to_owned()
         };
         let result = repository.enforce(&fischl_permission).await;
         assert!(result.is_ok());
 
         let fischl_wildcard_permission = EnforceRequest {
-            subject: "fischl-test".to_string(),
-            namespace: "namespace-test".to_string(),
-            domain: "*".to_string(),
-            object: "object-test".to_string(),
-            action: "action-test".to_string()
+            subject: "fischl-test".to_owned(),
+            namespace: "namespace-test".to_owned(),
+            domain: "*".to_owned(),
+            object: "object-test".to_owned(),
+            action: "action-test".to_owned()
         };
         let result = repository.enforce(&fischl_wildcard_permission).await;
         assert!(result.is_ok());

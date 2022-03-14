@@ -12,10 +12,10 @@ mod permission_should {
         let mut repository = test_repository::InMemoryRepository::new();
 
         let permission = Permission {
-            role: "superhero".to_string(),
-            domain: "new-york".to_string(),
-            object: "shawarma".to_string(),
-            action: "eat".to_string()
+            role: "superhero".to_owned(),
+            domain: "new-york".to_owned(),
+            object: "shawarma".to_owned(),
+            action: "eat".to_owned()
         };
         let successful_permission = repository.grant_permission("avengers", &permission).await;
         assert!(successful_permission.is_ok());
@@ -29,10 +29,10 @@ mod permission_should {
         let mut repository = test_repository::InMemoryRepository::new();
 
         let permission = Permission {
-            role: "superhero".to_string(),
-            domain: "new-york".to_string(),
-            object: "shawarma".to_string(),
-            action: "eat".to_string()
+            role: "superhero".to_owned(),
+            domain: "new-york".to_owned(),
+            object: "shawarma".to_owned(),
+            action: "eat".to_owned()
         };
 
         let authorization = repository.grant_permission("avengers", &permission).await;

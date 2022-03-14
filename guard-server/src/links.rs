@@ -13,9 +13,9 @@ pub struct Link {
 impl Link {
     pub fn new(href: &str, method: &str, title: &str) -> Self {
         Self {
-            href: href.to_string(),
-            method: method.to_string(),
-            title: title.to_string()
+            href: href.to_owned(),
+            method: method.to_owned(),
+            title: title.to_owned()
         }
     }
 }
@@ -33,7 +33,7 @@ impl Links {
     }
 
     pub fn push(&mut self, rel: &str, link: Link) {
-        self.links.insert(rel.to_string(), link);
+        self.links.insert(rel.to_owned(), link);
     }
 }
 
@@ -48,6 +48,6 @@ impl Links {
                 )
             );
         }
-        value.join(",").to_string()
+        value.join(",").to_owned()
     }
 }

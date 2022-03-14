@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut rng = rand::thread_rng();
 
-    for _ in 1..10000 {
+    for _ in 1..1000 {
         let number: u32 = rng.gen_range(1000..1000000);
         let now = Instant::now();
         call_grpc(number).await;

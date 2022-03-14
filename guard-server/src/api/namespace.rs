@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use poem::{Error, Result};
 use poem::http::StatusCode;
-use poem::web::Data;
+use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
+use poem_openapi::param::Path;
 use poem_openapi::payload::Json;
 use tokio::sync::Mutex;
 
@@ -24,7 +25,13 @@ struct NamespaceList {
 #[derive(ApiResponse)]
 enum NamespaceResponse {
     #[oai(status = 200)]
-    List(Json<NamespaceList>)
+    List(Json<NamespaceList>),
+    #[oai(status = 204)]
+    Links(
+        #[oai(header = "Link")] String
+    ),
+    #[oai(status = 204)]
+    Delete
 }
 
 #[OpenApi]
@@ -42,5 +49,27 @@ impl NamespacesApi {
             subject: None,
             namespaces
         })))
+    }
+
+    #[oai(path = "/namespaces/:id", method = "head")]
+    async fn get_namespace_links(
+        &self,
+        _repository: Data<&Arc<Mutex<PostgresRepository>>>,
+        _user: AuthenticatedUser,
+        id: Path<String>
+    ) -> Result<NamespaceResponse> {
+        Ok(NamespaceResponse::Links(
+            "</namespaces/:id/>".to_owned()
+        ))
+    }
+
+    #[oai(path = "/namespaces/:id", method = "delete")]
+    async fn delete_namespace(
+        &self,
+        _repository: Data<&Arc<Mutex<PostgresRepository>>>,
+        _user: AuthenticatedUser,
+        id: Path<i64>
+    ) -> Result<NamespaceResponse> {
+        Ok(NamespaceResponse::Delete)
     }
 }

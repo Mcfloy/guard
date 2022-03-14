@@ -34,7 +34,7 @@ impl InMemoryRepository {
 impl RoleRepository for InMemoryRepository {
     async fn assign_role(&mut self, namespace: &str, role: &Role) -> Result<(), GuardError> {
         let roles = self.roles
-            .entry(namespace.to_string())
+            .entry(namespace.to_owned())
             .or_insert(Vec::new());
 
         if roles.contains(&role) {
@@ -106,7 +106,7 @@ impl EnforceRepository for InMemoryRepository {
         let permissions = self.get_permissions(namespace)?;
 
         if !permissions.contains(permission) {
-            return Err(GuardError::PermissionError("No permission found.".to_string()))
+            return Err(GuardError::PermissionError("No permission found.".to_owned()))
         }
         permissions.retain(|p| p != permission);
         Ok(())

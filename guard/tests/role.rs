@@ -10,9 +10,9 @@ mod role_should {
         let mut repository = test_repository::InMemoryRepository::new();
 
         let role = Role {
-            subject: "alice".to_string(),
-            domain: "domain".to_string(),
-            role: "owner".to_string()
+            subject: "alice".to_owned(),
+            domain: "domain".to_owned(),
+            role: "owner".to_owned()
         };
         let result = repository.assign_role("namespace-test", &role).await;
         assert_eq!(result.is_ok());
@@ -23,9 +23,9 @@ mod role_should {
         let mut repository = test_repository::InMemoryRepository::new();
 
         let role = Role {
-            subject: "alice".to_string(),
-            domain: "domain".to_string(),
-            role: "owner".to_string(),
+            subject: "alice".to_owned(),
+            domain: "domain".to_owned(),
+            role: "owner".to_owned(),
         };
         let successful_addition = repository.assign_role("namespace-test", &role).await;
         assert_eq!(successful_addition.is_ok());
@@ -39,9 +39,9 @@ mod role_should {
         let mut repository = test_repository::InMemoryRepository::new();
 
         let role = Role {
-            subject: "alice".to_string(),
-            domain: "domain".to_string(),
-            role: "owner".to_string(),
+            subject: "alice".to_owned(),
+            domain: "domain".to_owned(),
+            role: "owner".to_owned(),
         };
         let successful_addition = repository.assign_role("namespace-test", &role).await;
         assert_eq!(successful_addition.is_ok());

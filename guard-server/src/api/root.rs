@@ -33,7 +33,7 @@ impl RootApi {
 fn not_connected_links(locale: Locale) -> String {
     let mut links = Links::new();
 
-    let title = locale.text("login").unwrap_or("".to_string());
+    let title = locale.text("login").unwrap_or("".to_owned());
     links.push("login", Link::new("/","GET", &title));
 
     links.to_header()
@@ -42,7 +42,7 @@ fn not_connected_links(locale: Locale) -> String {
 fn connected_links(user_subject: &str, locale: Locale) -> String {
     let mut links = Links::new();
 
-    let title = locale.text("permissions").unwrap_or("".to_string());
+    let title = locale.text("permissions").unwrap_or("".to_owned());
     links.push("permissions", Link::new("/permissions", "HEAD", &title));
 
     links.to_header()

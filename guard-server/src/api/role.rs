@@ -1,44 +1,119 @@
 use std::sync::Arc;
 
-use poem::{Error, Result};
-use poem::web::Data;
+use poem::{Result};
+use poem::i18n::Locale;
+use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
-use poem_openapi::payload::Json;
+use poem_openapi::param::Path;
+use poem_openapi::payload::{Json, PlainText};
+use serde::Deserialize;
 use tokio::sync::Mutex;
+use guard::enforce::EnforceRequest;
 
 use guard::role::{Role, RoleRepository};
 use guard_postgres::PostgresRepository;
 
 use crate::api::jwt::AuthenticatedUser;
-use crate::StatusCode;
+use crate::error::{handle_enforce, UnknownError};
 
 pub struct RoleApi;
 
 #[derive(Object)]
 struct RoleList {
-    roles: Vec<Role>
+    roles: Vec<Role>,
 }
 
 #[derive(ApiResponse)]
 enum RoleResponse {
-    #[oai(status = 200)]
-    List(Json<RoleList>)
+    /// Role has been assigned
+    #[oai(status = 201)]
+    RoleAssigned,
+    /// Role has been removed
+    #[oai(status = 204)]
+    RoleRemoved,
+    /// Role is already assigned
+    #[oai(status = 409)]
+    RoleAlreadyAssigned(PlainText<String>)
+}
+
+#[derive(Object, Deserialize)]
+struct RoleRequest {
+    pub subject: String,
+    pub domain: String,
+    pub role: String,
+}
+
+impl Into<Role> for RoleRequest {
+    fn into(self) -> Role {
+        Role {
+            subject: self.subject,
+            domain: self.domain,
+            role: self.role
+        }
+    }
 }
 
 #[OpenApi]
 impl RoleApi {
-    #[oai(path = "/roles", method = "get")]
-    async fn get_roles(
+    #[oai(path = "/namespaces/:id/roles", method = "post")]
+    async fn grant_role(
         &self,
         repository: Data<&Arc<Mutex<PostgresRepository>>>,
-        user: AuthenticatedUser
+        locale: Locale,
+        user: AuthenticatedUser,
+        id: Path<String>,
+        request: Json<RoleRequest>
     ) -> Result<RoleResponse> {
-        let roles = repository.0.lock().await
-            .list_roles(&user.0.namespace, "*", &user.0.sub).await
-            .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?;
+        let namespace = id.0;
+        let enforce_request = EnforceRequest {
+            subject: user.0.sub,
+            namespace: "guard".to_owned(),
+            domain: namespace.to_owned(),
+            object: "role".to_owned(),
+            action: "edit".to_owned()
+        };
+        handle_enforce(&locale, &repository, &enforce_request).await?;
 
-        Ok(RoleResponse::List(Json(RoleList {
-            roles
-        })))
+        match repository.0.lock().await.assign_role(&namespace, &request.0.into()).await {
+            Ok(_) => Ok(RoleResponse::RoleAssigned),
+            Err(_) => {
+                let message = locale
+                    .text("role-already-assigned")
+                    .unwrap_or_else(|_| "error".to_owned());
+
+                Ok(RoleResponse::RoleAlreadyAssigned(PlainText(message)))
+            }
+        }
+    }
+
+    #[oai(path = "/namespaces/:id/roles", method = "delete")]
+    async fn remove_role(
+        &self,
+        repository: Data<&Arc<Mutex<PostgresRepository>>>,
+        locale: Locale,
+        user: AuthenticatedUser,
+        id: Path<String>,
+        request: Json<RoleRequest>
+    ) -> Result<RoleResponse> {
+        let namespace = id.0;
+        let enforce_request = EnforceRequest {
+            subject: user.0.sub,
+            namespace: "guard".to_owned(),
+            domain: namespace.to_owned(),
+            object: "role".to_owned(),
+            action: "edit".to_owned()
+        };
+        handle_enforce(&locale, &repository, &enforce_request).await?;
+
+        match repository.0.lock().await.remove_role(&namespace, &request.0.into()).await {
+            Ok(_) => Ok(RoleResponse::RoleRemoved),
+            Err(error) => {
+                tracing::warn!("Error while removing role {}", error.to_string());
+                let message = locale
+                    .text("error")
+                    .unwrap_or("error".to_owned());
+                Err(UnknownError::new(message).into())
+            }
+        }
     }
 }
