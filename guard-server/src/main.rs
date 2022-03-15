@@ -48,12 +48,6 @@ async fn main() -> Result<(), std::io::Error> {
         .nest("/api", api_service
             .data(Arc::clone(&repository))
             .data(resources)
-            // .catch_error(|error: ForbiddenError| async move {
-            //     println!("{:?}", error);
-            //     Response::builder()
-            //         .status(StatusCode::FORBIDDEN)
-            //         .body(error.message)
-            // })
         )
         .nest("/docs", docs)
         .nest_no_strip("/", tonic::transport::Server::builder()

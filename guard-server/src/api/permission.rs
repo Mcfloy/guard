@@ -13,7 +13,6 @@ use guard::enforce::EnforceRequest;
 use guard::permission::{Permission, PermissionRepository};
 use guard_postgres::PostgresRepository;
 use crate::error::{handle_enforce, UnknownError};
-use crate::links::{Link, Links};
 
 use crate::api::jwt::AuthenticatedUser;
 

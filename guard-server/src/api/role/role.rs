@@ -6,15 +6,15 @@ use poem::web::{Data};
 use poem_openapi::{ApiResponse, Object, OpenApi};
 use poem_openapi::param::Path;
 use poem_openapi::payload::{Json, PlainText};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 use guard::enforce::EnforceRequest;
 
 use guard::role::{Role, RoleRepository};
 use guard_postgres::PostgresRepository;
 
-use crate::api::jwt::AuthenticatedUser;
 use crate::error::{handle_enforce, UnknownError};
+use crate::api::jwt::AuthenticatedUser;
 
 pub struct RoleApi;
 
@@ -36,7 +36,7 @@ enum RoleResponse {
     RoleAlreadyAssigned(PlainText<String>)
 }
 
-#[derive(Object, Deserialize)]
+#[derive(Object, Serialize, Deserialize)]
 struct RoleRequest {
     pub subject: String,
     pub domain: String,
@@ -55,6 +55,24 @@ impl Into<Role> for RoleRequest {
 
 #[OpenApi]
 impl RoleApi {
+
+    #[oai(path = "/namespaces/:id/roles/form", method = "get")]
+    async fn get_role_form(
+        &self,
+        repository: Data<&Arc<Mutex<PostgresRepository>>>,
+        locale: Locale,
+        user: AuthenticatedUser,
+        id: Path<String>
+    ) -> Result<Json<RoleRequest>> {
+        Ok(Json(
+            RoleRequest {
+                subject: "".to_owned(),
+                domain: "".to_owned(),
+                role: "".to_owned()
+            }
+        ))
+    }
+
     #[oai(path = "/namespaces/:id/roles", method = "post")]
     async fn grant_role(
         &self,

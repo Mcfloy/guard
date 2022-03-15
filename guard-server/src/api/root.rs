@@ -39,11 +39,11 @@ fn not_connected_links(locale: Locale) -> String {
     links.to_header()
 }
 
-fn connected_links(user_subject: &str, locale: Locale) -> String {
+fn connected_links(_user_subject: &str, locale: Locale) -> String {
     let mut links = Links::new();
 
-    let title = locale.text("permissions").unwrap_or("".to_owned());
-    links.push("permissions", Link::new("/permissions", "HEAD", &title));
+    let title = locale.text("namespaces").unwrap_or("".to_owned());
+    links.push("namespaces", Link::new("/namespaces", "HEAD", &title));
 
     links.to_header()
 }
