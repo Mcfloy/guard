@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use poem::{EndpointExt, Route, Server};
-use poem::endpoint::TowerCompatExt;
+use poem::endpoint::{StaticFilesEndpoint, TowerCompatExt};
 use poem::http::StatusCode;
 use poem::i18n::I18NResources;
 use poem::listener::TcpListener;
@@ -45,6 +45,7 @@ async fn main() -> Result<(), std::io::Error> {
     let docs = api_service.swagger_ui();
 
     let app = Route::new()
+        .nest("/ui", StaticFilesEndpoint::new("./guard-server/src/ui"))
         .nest("/api", api_service
             .data(Arc::clone(&repository))
             .data(resources)
