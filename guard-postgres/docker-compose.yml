@@ -6,7 +6,6 @@ services:
     environment:
       POSTGRES_USER: guard
       POSTGRES_PASSWORD: password
-      APP_DB_USER:
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:

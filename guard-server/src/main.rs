@@ -11,9 +11,9 @@ use tokio::sync::Mutex;
 
 use guard_grpc::{EnforcerServer, GrpcServer};
 use guard_postgres::PostgresRepository;
+use crate::api::namespace::handlers::NamespacesApi;
 use crate::api::permission::PermissionApi;
 
-use crate::api::namespace::NamespacesApi;
 use crate::api::role::RoleApi;
 use crate::api::root::RootApi;
 

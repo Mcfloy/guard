@@ -2,12 +2,12 @@ CREATE TABLE IF NOT EXISTS namespace (id varchar(32) constraint table_name_pk pr
 
 INSERT INTO namespace VALUES ('guard');
 
-CREATE TABLE IF NOT EXISTS namespace_guard (
+CREATE TABLE IF NOT EXISTS permission_guard (
     role   varchar(32),
     domain varchar(32) default '*',
     object varchar(32),
     action varchar(32),
-    constraint namespace_guard_pk primary key (role, domain, object, action)
+    constraint permission_guard_pk primary key (role, domain, object, action)
 );
 
 CREATE TABLE IF NOT EXISTS role_guard (

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use poem_openapi::Object;
 
+// TODO: Convert into a utility method
 /// Object that is composing a {Links}
 #[derive(Object)]
 pub struct Link {

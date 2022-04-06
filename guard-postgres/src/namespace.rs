@@ -7,24 +7,29 @@ use crate::PostgresRepository;
 #[async_trait]
 impl NamespaceRepository for PostgresRepository {
     async fn create_namespace(&mut self, namespace: &str) -> Result<(), GuardError> {
-        // TODO: Use tracing warning inside the map_err methods.
         let mut transaction = self.pool.begin().await
-            .map_err(|_| GuardError::NamespaceError("Can't begin transaction".to_owned()))?;
+            .map_err(|_| {
+                tracing::warn!("Can't begin transaction to create namespace {}", namespace);
+                GuardError::NamespaceError("Can't begin transaction".to_owned())
+            })?;
 
         // Namespace has only one field that is a primary key, so using this query
         // inside a transaction will cancel the next query.
         query!("INSERT INTO namespace VALUES ($1)", namespace)
             .execute(&mut *transaction)
             .await
-            .map_err(|_| GuardError::NamespaceError("Can't add new namespace".to_owned()))?;
+            .map_err(|_| {
+                tracing::warn!("Can't add new namespace {}", namespace);
+                GuardError::NamespaceError("Can't add new namespace".to_owned())
+            })?;
 
         let table_creation_query = format!("
-            CREATE TABLE IF NOT EXISTS {namespace} (
+            CREATE TABLE IF NOT EXISTS permission_{namespace} (
                 role   varchar(32),
                 domain varchar(32) default '*',
                 object varchar(32),
                 action varchar(32),
-                constraint namespace_{namespace}_pk primary key (role, domain, object, action)
+                constraint permission_{namespace}_pk primary key (role, domain, object, action)
             );
             CREATE TABLE IF NOT EXISTS role_{namespace} (
                 subject varchar(128),
@@ -39,10 +44,16 @@ impl NamespaceRepository for PostgresRepository {
         query(&table_creation_query)
             .execute(&mut *transaction)
             .await
-            .map_err(|_| GuardError::NamespaceError("Cannot execute transaction".to_owned()))?;
+            .map_err(|_| {
+                tracing::warn!("Can't execute transaction to create namespace {}", namespace);
+                GuardError::NamespaceError("Cannot execute transaction".to_owned())
+            })?;
 
         transaction.commit().await
-            .map_err(|_| GuardError::NamespaceError("Cannot commit transaction".to_owned()))?;
+            .map_err(|_| {
+                tracing::warn!("Can't commit transaction to create namespace {}", namespace);
+                GuardError::NamespaceError("Cannot commit transaction".to_owned())
+            })?;
 
         Ok(())
     }

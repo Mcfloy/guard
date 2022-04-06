@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use poem::{Error, Result};
@@ -13,22 +14,15 @@ use guard::namespace::NamespaceRepository;
 use guard_postgres::PostgresRepository;
 
 use crate::api::jwt::AuthenticatedUser;
-use crate::api::namespace::NamespaceResponse::NamespaceNotFound;
+use crate::api::namespace::handlers::NamespaceResponse::NamespaceNotFound;
+use crate::api::namespace::responses::{NamespaceList, NamespaceListResponse};
 use crate::error::UnknownError;
 use crate::links::{Link, Links};
 
 pub struct NamespacesApi;
 
-#[derive(Object)]
-struct NamespaceList {
-    #[oai(skip_serializing_if_is_none)]
-    namespaces: Vec<Namespace>
-}
-
 #[derive(ApiResponse)]
 enum NamespaceResponse {
-    #[oai(status = 200)]
-    List(Json<NamespaceList>),
     #[oai(status = 204,)]
     Links(
         #[oai(header = "Link")] String
@@ -44,7 +38,7 @@ enum NamespaceResponse {
 #[derive(Object)]
 pub struct Namespace {
     name: String,
-    links: Links
+    links: HashMap<String, Link>
 }
 
 #[OpenApi]
@@ -54,14 +48,15 @@ impl NamespacesApi {
         &self,
         repository: Data<&Arc<Mutex<PostgresRepository>>>,
         _user: AuthenticatedUser
-    ) -> Result<NamespaceResponse> {
+    ) -> Result<NamespaceListResponse> {
         let namespaces = repository.0.lock().await.get_namespaces().await
             .map_err(|_| Error::from_status(StatusCode::INTERNAL_SERVER_ERROR))?
             .iter()
             .map(|n| {
                 let namespace = n.as_str();
-                let mut links = Links::new();
-                links.push("href", Link::new("/namespaces/{id}", "GET", namespace));
+                let mut links = HashMap::new();
+                let href = format!("/namespaces/{}", namespace);
+                links.insert("href".to_owned(), Link::new(&href, "GET", namespace));
                 Namespace {
                     name: namespace.to_owned(),
                     links
@@ -69,7 +64,7 @@ impl NamespacesApi {
             })
             .collect();
 
-        Ok(NamespaceResponse::List(Json(NamespaceList {
+        Ok(NamespaceListResponse::List(Json(NamespaceList {
             namespaces
         })))
     }
@@ -115,7 +110,7 @@ impl NamespacesApi {
         &self,
         _repository: Data<&Arc<Mutex<PostgresRepository>>>,
         _user: AuthenticatedUser,
-        id: Path<i64>
+        _id: Path<i64>
     ) -> Result<NamespaceResponse> {
         Ok(NamespaceResponse::Delete)
     }
