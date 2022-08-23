@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use poem::{EndpointExt, Route, Server};
-use poem::endpoint::{StaticFilesEndpoint, TowerCompatExt};
+use poem::endpoint::{TowerCompatExt};
 use poem::http::StatusCode;
 use poem::i18n::I18NResources;
 use poem::listener::TcpListener;
@@ -24,7 +24,7 @@ mod links;
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     if std::env::var_os("RUST_LOG").is_none() {
-        std::env::set_var("RUST_LOG", "guard=debug;guard-server=debug;");
+        std::env::set_var("RUST_LOG", "guard=debug,guard-server=debug");
     }
     tracing_subscriber::fmt::init();
 
@@ -45,7 +45,6 @@ async fn main() -> Result<(), std::io::Error> {
     let docs = api_service.swagger_ui();
 
     let app = Route::new()
-        .nest("/ui", StaticFilesEndpoint::new("./guard-server/src/ui"))
         .nest("/api", api_service
             .data(Arc::clone(&repository))
             .data(resources)

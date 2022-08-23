@@ -59,10 +59,6 @@ impl RoleApi {
     #[oai(path = "/namespaces/:id/roles/form", method = "get")]
     async fn get_role_form(
         &self,
-        repository: Data<&Arc<Mutex<PostgresRepository>>>,
-        locale: Locale,
-        user: AuthenticatedUser,
-        id: Path<String>
     ) -> Result<Json<RoleRequest>> {
         Ok(Json(
             RoleRequest {

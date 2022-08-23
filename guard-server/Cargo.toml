@@ -9,7 +9,7 @@ edition = "2021"
 guard = { path = "../guard", features = ["with-poem"] }
 guard-grpc = { path = "../guard-grpc" }
 guard-postgres = { path = "../guard-postgres" }
-poem = { version = "1.3.10", features = ["i18n", "anyhow", "tower-compat", "static-files"] }
+poem = { version = "1.3.36", features = ["i18n", "anyhow", "tower-compat", "static-files"] }
 poem-openapi = { version = "1.3.10", features = ["swagger-ui"] }
 thiserror = "1.0.30"
 tokio = { version = "1.17.0", features = ["macros", "rt-multi-thread"] }
